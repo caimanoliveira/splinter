@@ -1,0 +1,338 @@
+# CLAUDE.md — AI Assistant Guide for splinter
+
+## Project Overview
+
+**splinter** (Supabase Postgres LINTER) is a collection of SQL-based lints for Supabase/PostgreSQL projects. Each lint is a SQL query that identifies common database schema issues — security vulnerabilities, performance problems, and misconfigurations — by querying PostgreSQL system catalogs (`pg_catalog`).
+
+The project is used in Supabase Studio to surface actionable database health warnings directly to users.
+
+- Documentation: https://supabase.github.io/splinter
+- Source: https://github.com/supabase/splinter
+- Requires: PostgreSQL 15+
+
+---
+
+## Repository Structure
+
+```
+splinter/
+├── lints/                        # Individual lint SQL files (source of truth)
+│   ├── 0001_unindexed_foreign_keys.sql
+│   ├── 0002_auth_users_exposed.sql
+│   └── ... (one file per lint, numbered sequentially)
+├── splinter.sql                  # Auto-generated: all lints combined via UNION ALL
+├── bin/
+│   ├── compile.py                # Generates splinter.sql from lints/ directory
+│   └── installcheck              # Bash script to run the test suite locally
+├── test/
+│   ├── fixtures.sql              # Sets up test DB: lint schema, auth stubs, roles
+│   ├── sql/                      # Test input files (one per lint)
+│   │   └── 0001_unindexed_foreign_keys.sql
+│   └── expected/                 # Expected psql output for regression tests
+│       └── 0001_unindexed_foreign_keys.out
+├── docs/                         # MkDocs documentation source
+│   ├── index.md
+│   └── 0001_unindexed_foreign_keys.md  (one doc per lint)
+├── dockerfiles/
+│   ├── Dockerfile                # Builds supabase/postgres image for testing
+│   └── docker-compose.yml        # Orchestrates test container
+├── .pre-commit-config.yaml       # Pre-commit hooks: formatting + compile step
+├── .sqlfluff                     # SQLFluff linter configuration
+└── mkdocs.yaml                   # Documentation site configuration
+```
+
+---
+
+## Lint Interface
+
+Every lint is a SQL view in the `lint` schema returning this exact interface (column order matters for UNION ALL compatibility):
+
+| Column        | Type       | Nullable | Description |
+|---------------|------------|----------|-------------|
+| `name`        | `text`     | NOT NULL | Snake_case lint identifier (e.g. `unindexed_foreign_keys`) |
+| `title`       | `text`     | NOT NULL | Human-readable title |
+| `level`       | `text`     | NOT NULL | Severity: `ERROR`, `WARN`, or `INFO` |
+| `facing`      | `text`     | NOT NULL | Audience: `INTERNAL` or `EXTERNAL` |
+| `categories`  | `text[]`   | NOT NULL | Tags: `SECURITY`, `PERFORMANCE` (array) |
+| `description` | `text`     | NOT NULL | Why this is an issue |
+| `detail`      | `text`     | NOT NULL | Specific instance info (table/column/constraint names) |
+| `remediation` | `text`     | nullable | URL to docs explaining how to fix |
+| `metadata`    | `jsonb`    | nullable | Structured data: schema, name, type, and lint-specific fields |
+| `cache_key`   | `text`     | NOT NULL | Unique key for exclusion lists; prefixed with lint name |
+
+### `cache_key` Convention
+Format: `{lint_name}_{schema}_{table}_{optional_extra}`
+Example: `unindexed_foreign_keys_public_bbb_bbb_aaa_id_fkey`
+
+---
+
+## How Lints Are Structured (Individual Files)
+
+Each file in `lints/` is a SQL view definition:
+
+```sql
+create view lint."NNNN_lint_name" as
+
+-- optional CTEs
+with some_cte as (
+    ...
+)
+select
+    'lint_name'           as name,
+    'Human Title'         as title,
+    'ERROR'               as level,    -- ERROR | WARN | INFO
+    'EXTERNAL'            as facing,   -- EXTERNAL | INTERNAL
+    array['SECURITY']     as categories,
+    'Description text'    as description,
+    format('...')         as detail,
+    'https://...'         as remediation,
+    jsonb_build_object(
+        'schema', ...,
+        'name', ...,
+        'type', 'table'   -- 'table' | 'view' | 'function' | 'extension' | ...
+    )                     as metadata,
+    format('lint_name_%s_%s', schema, table) as cache_key
+from
+    ...
+where
+    -- Filter out internal/extension schemas
+    schema_name not in (
+        '_timescaledb_cache', '_timescaledb_catalog', '_timescaledb_config',
+        '_timescaledb_internal', 'auth', 'cron', 'extensions', 'graphql',
+        'graphql_public', 'information_schema', 'net', 'pgroonga', 'pgsodium',
+        'pgsodium_masks', 'pgtle', 'pgbouncer', 'pg_catalog', 'pgtle',
+        'realtime', 'repack', 'storage', 'supabase_functions',
+        'supabase_migrations', 'tiger', 'topology', 'vault'
+    );
+```
+
+**Critical rules:**
+- Always use fully-qualified catalog references: `pg_catalog.pg_class`, not `pg_class`
+- Set `search_path = ''` to avoid ambiguity
+- Exclude extension-owned objects using `pg_depend` with `deptype = 'e'`
+- Exclude internal Supabase/system schemas using the standard blocklist above
+
+---
+
+## `splinter.sql` — The Compiled Output
+
+`splinter.sql` is auto-generated by `bin/compile.py`. **Do not edit it manually.**
+
+The compile script:
+1. Reads all `.sql` files from `lints/` in sorted order
+2. Strips `create view ...` lines and semicolons
+3. Wraps each query in `( ... )` so CTEs can be combined with `UNION ALL`
+4. Prepends `set local search_path = '';`
+5. Joins all queries with `\nunion all\n`
+6. Writes the result to `splinter.sql`
+
+The compile step runs automatically as a pre-commit hook. To run it manually:
+
+```sh
+python bin/compile.py
+```
+
+---
+
+## Development Workflow
+
+### Adding a New Lint
+
+1. **Create the lint file** in `lints/` with the next sequential number:
+   ```
+   lints/NNNN_lint_name.sql
+   ```
+
+2. **Write the lint** as a `create view lint."NNNN_lint_name" as ...` statement following the interface above.
+
+3. **Create the test file** in `test/sql/`:
+   ```
+   test/sql/NNNN_lint_name.sql
+   ```
+   Tests use transactions with savepoints to isolate cases:
+   ```sql
+   begin;
+       savepoint a;
+       set local search_path = '';
+
+       -- Setup: create tables/policies that trigger the lint
+       create table public.example (...);
+
+       -- Assert: query the lint view
+       select * from lint."NNNN_lint_name";
+
+       -- Cleanup and test next scenario
+       rollback to savepoint a;
+
+       -- Setup: scenario where lint should NOT fire
+       ...
+       select * from lint."NNNN_lint_name";
+
+   rollback;
+   ```
+
+4. **Generate the expected output** by running the tests and capturing output, then save to:
+   ```
+   test/expected/NNNN_lint_name.out
+   ```
+
+5. **Update `bin/installcheck`** to include the new lint SQL file in the `psql` invocation line.
+
+6. **Update `test/sql/queries_are_unionable.sql`** to include the new lint view in the UNION ALL query.
+
+7. **Create the documentation** in `docs/NNNN_lint_name.md` with rationale and remediation steps.
+
+8. **Update `mkdocs.yaml`** to add the new doc to the navigation.
+
+9. **Run `python bin/compile.py`** to regenerate `splinter.sql` (or rely on pre-commit).
+
+10. **Deploy to Supabase Studio** by opening a PR against `supabase/supabase` updating the lint query at `apps/studio/data/lint/lint-query.ts`.
+
+---
+
+## Testing
+
+### Running Tests (Docker — recommended)
+
+```sh
+# Full test suite with a specific Supabase Postgres version
+docker rmi -f dockerfiles-test && SUPABASE_VERSION=15.1.1.13 docker-compose -f dockerfiles/docker-compose.yml run --rm test
+```
+
+### Running Tests (Local PostgreSQL)
+
+```sh
+# Run all tests
+./bin/installcheck
+
+# Run a specific test
+./bin/installcheck 0001_unindexed_foreign_keys
+```
+
+### Test Framework
+
+Tests use PostgreSQL's `pg_regress` regression testing framework:
+- **Input**: `test/sql/*.sql` — SQL scripts that set up scenarios and query lint views
+- **Expected**: `test/expected/*.out` — Expected psql output for diff comparison
+- **Fixtures**: `test/fixtures.sql` — Runs once to set up the `lint` schema, `auth` schema stubs, and test roles (`anon`, `authenticated`)
+
+If a test produces output that differs from the `.out` file, the test fails. To update expected output after an intentional change, run the tests and copy the `test/results/*.out` files to `test/expected/`.
+
+### CI
+
+GitHub Actions runs on all PRs and pushes to `master`:
+- **`test.yml`**: Builds Docker image and runs `bin/installcheck` for PostgreSQL 15
+- **`pre-commit_hooks.yaml`**: Runs pre-commit hooks including `black`, whitespace checks, and the compile script
+
+---
+
+## Code Style and Conventions
+
+### SQL Style (enforced by SQLFluff)
+
+- **Dialect**: PostgreSQL
+- **Indentation**: 4 spaces (no tabs)
+- **Keywords**: lowercase (`select`, `from`, `where`, `join`, etc.)
+- **Literals**: lowercase
+- **Types**: lowercase
+- Always fully qualify catalog references: `pg_catalog.pg_class` not `pg_class`
+- Use `set local search_path = ''` at the start of sessions
+
+Run SQLFluff:
+```sh
+sqlfluff lint lints/
+sqlfluff fix lints/
+```
+
+### Python Style (enforced by Black)
+
+- `bin/compile.py` is formatted with Black (Python 3.9)
+- Run: `black bin/compile.py`
+
+### Pre-commit Hooks
+
+The following run automatically on `git commit`:
+- `trailing-whitespace` — removes trailing whitespace (excludes `test/expected/`)
+- `check-added-large-files` — blocks committing large files
+- `check-yaml` — validates YAML files
+- `mixed-line-ending` — normalizes to LF
+- `remove-tabs` — converts tabs to 4 spaces
+- `black` — Python formatter
+- `compile-script` — regenerates `splinter.sql` from `lints/`
+
+Install pre-commit hooks:
+```sh
+pip install pre-commit
+pre-commit install
+```
+
+---
+
+## Schema Blocklist
+
+All lints must exclude these internal/system schemas. This standard blocklist is used across all lint queries:
+
+```
+_timescaledb_cache, _timescaledb_catalog, _timescaledb_config,
+_timescaledb_internal, auth, cron, extensions, graphql, graphql_public,
+information_schema, net, pgroonga, pgsodium, pgsodium_masks, pgtle,
+pgbouncer, pg_catalog, pgtle, realtime, repack, storage,
+supabase_functions, supabase_migrations, tiger, topology, vault
+```
+
+Some lints exclude `realtime` from this list when monitoring realtime-specific policies.
+
+---
+
+## Current Lints
+
+| ID   | Name | Level | Categories |
+|------|------|-------|------------|
+| 0001 | `unindexed_foreign_keys` | INFO | PERFORMANCE |
+| 0002 | `auth_users_exposed` | ERROR | SECURITY |
+| 0003 | `auth_rls_initplan` | WARN | PERFORMANCE |
+| 0004 | `no_primary_key` | INFO | PERFORMANCE |
+| 0005 | `unused_index` | INFO | PERFORMANCE |
+| 0006 | `multiple_permissive_policies` | WARN | PERFORMANCE |
+| 0007 | `policy_exists_rls_disabled` | ERROR | SECURITY |
+| 0008 | `rls_enabled_no_policy` | INFO | SECURITY |
+| 0009 | `duplicate_index` | WARN | PERFORMANCE |
+| 0010 | `security_definer_view` | ERROR | SECURITY |
+| 0011 | `function_search_path_mutable` | WARN | SECURITY |
+| 0013 | `rls_disabled_in_public` | ERROR | SECURITY |
+| 0014 | `extension_in_public` | WARN | SECURITY |
+| 0015 | `rls_references_user_metadata` | ERROR | SECURITY |
+| 0016 | `materialized_view_in_api` | WARN | SECURITY |
+| 0017 | `foreign_table_in_api` | WARN | SECURITY |
+| 0018 | `unsupported_reg_types` | WARN | SECURITY |
+| 0019 | `insecure_queue_exposed_in_api` | ERROR | SECURITY |
+| 0020 | `table_bloat` | INFO | PERFORMANCE |
+| 0021 | `fkey_to_auth_unique` | ERROR | SECURITY |
+
+Note: Lint number 0012 is absent (reserved/removed). New lints should continue from 0022.
+
+---
+
+## Deploying to Supabase Studio
+
+After merging changes to this repo, deploy to Supabase production:
+
+1. Open a PR against `supabase/supabase` updating the lint query:
+   - File: `apps/studio/data/lint/lint-query.ts` (the `lint-query` constant)
+
+2. If adding a new lint, also update:
+   - `getHumanReadableTitle` in `apps/studio/components/interfaces/Reports/ReportLints.utils.tsx`
+   - `LINT_TYPES` in `apps/studio/data/lint/lint-query.ts`
+
+See [example PR](https://github.com/supabase/supabase/pull/22682).
+
+---
+
+## Key Patterns and Gotchas
+
+- **Extension-owned objects**: Always exclude using `left join pg_catalog.pg_depend dep on ... dep.deptype = 'e'` and filter with `dep.objid is null`.
+- **`pg_regress` output format**: The `.out` files must match `psql` output exactly, including column alignment. Regenerate them if column widths change.
+- **Lint numbering gap**: There is no lint 0012. The next lint ID should be 0022.
+- **`splinter.sql` is generated**: Never edit it directly. Changes will be overwritten by the pre-commit hook.
+- **PostgREST schema exposure**: Several lints check `current_setting('pgrst.db_schemas', 't')` to determine which schemas are exposed via the API. In tests, this returns an empty string; lints must handle this gracefully.
+- **`auth.users` mock in tests**: `test/fixtures.sql` creates a stub `auth.users` table and `auth.uid()`, `auth.jwt()`, `auth.role()`, `auth.email()` functions to support testing auth-related lints without a full Supabase installation.

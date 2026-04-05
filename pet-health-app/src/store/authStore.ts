@@ -1,102 +1,61 @@
+/**
+ * authStore — profile metadata stored in our Neon DB.
+ *
+ * Session / user state is owned by Clerk — use the hooks from src/lib/auth.ts
+ * (useAuth, useUser) for sign-in status and identity.
+ *
+ * This store handles the one thing Clerk doesn't store: the "profile" row in
+ * our own `users` table so the rest of the app can JOIN against it.
+ */
 import { create } from 'zustand';
-import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { sql } from '../lib/db';
 import type { Profile } from '../types';
 
-interface AuthState {
-  session: Session | null;
-  user: User | null;
+interface ProfileState {
   profile: Profile | null;
   loading: boolean;
   error: string | null;
 
-  // Actions
-  initialize: () => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
-  signOut: () => Promise<void>;
-  fetchProfile: () => Promise<void>;
+  /** Upsert a profile row for the given Clerk user ID. */
+  syncProfile: (userId: string, fullName: string | null) => Promise<void>;
+  /** Fetch the stored profile for the current user. */
+  fetchProfile: (userId: string) => Promise<void>;
+  clearProfile: () => void;
   clearError: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  session: null,
-  user: null,
+export const useProfileStore = create<ProfileState>((set) => ({
   profile: null,
-  loading: true,
+  loading: false,
   error: null,
 
-  initialize: async () => {
+  syncProfile: async (userId, fullName) => {
+    set({ loading: true, error: null });
     try {
-      const { data } = await supabase.auth.getSession();
-      set({
-        session: data.session,
-        user: data.session?.user ?? null,
-        loading: false,
-      });
-
-      if (data.session?.user) {
-        get().fetchProfile();
-      }
-
-      // Listen for auth state changes
-      supabase.auth.onAuthStateChange((_event, session) => {
-        set({ session, user: session?.user ?? null });
-        if (session?.user) {
-          get().fetchProfile();
-        } else {
-          set({ profile: null });
-        }
-      });
+      const rows = await sql`
+        INSERT INTO users (id, full_name, updated_at)
+        VALUES (${userId}, ${fullName}, NOW())
+        ON CONFLICT (id) DO UPDATE
+          SET full_name  = COALESCE(EXCLUDED.full_name, users.full_name),
+              updated_at = NOW()
+        RETURNING *
+      `;
+      set({ profile: rows[0] as Profile, loading: false });
     } catch (err) {
       set({ loading: false, error: (err as Error).message });
     }
   },
 
-  signIn: async (email, password) => {
+  fetchProfile: async (userId) => {
     set({ loading: true, error: null });
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      set({ loading: false, error: error.message });
-      throw error;
-    }
-    set({ loading: false });
-  },
-
-  signUp: async (email, password, fullName) => {
-    set({ loading: true, error: null });
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } },
-    });
-    if (error) {
-      set({ loading: false, error: error.message });
-      throw error;
-    }
-    set({ loading: false });
-  },
-
-  signOut: async () => {
-    set({ loading: true });
-    await supabase.auth.signOut();
-    set({ session: null, user: null, profile: null, loading: false });
-  },
-
-  fetchProfile: async () => {
-    const { user } = get();
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    if (!error && data) {
-      set({ profile: data as Profile });
+    try {
+      const rows = await sql`SELECT * FROM users WHERE id = ${userId}`;
+      set({ profile: (rows[0] as Profile) ?? null, loading: false });
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
     }
   },
 
+  clearProfile: () => set({ profile: null }),
   clearError: () => set({ error: null }),
 }));

@@ -11,6 +11,7 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useUser } from '@clerk/clerk-expo';
 import { useVetStore } from '../../store/vetStore';
 import { Button } from '../../components/common/Button';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
@@ -20,6 +21,7 @@ type Props = NativeStackScreenProps<VetsStackParamList, 'VetDetail'>;
 
 export function VetDetailScreen({ navigation, route }: Props) {
   const { vetId } = route.params;
+  const { user } = useUser();
   const { vets, deleteVet } = useVetStore();
   const vet = vets.find((v) => v.id === vetId);
 
@@ -31,7 +33,7 @@ export function VetDetailScreen({ navigation, route }: Props) {
         style: 'destructive',
         onPress: async () => {
           try {
-            await deleteVet(vetId);
+            await deleteVet(vetId, user?.id ?? '');
             navigation.goBack();
           } catch {
             Alert.alert('Error', 'Could not remove vet.');

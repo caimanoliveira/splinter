@@ -13,10 +13,10 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useUser } from '@clerk/clerk-expo';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { usePetStore } from '../../store/petStore';
-import { useAuthStore } from '../../store/authStore';
 import { uploadFile } from '../../lib/storage';
 import type { PetsStackParamList, HealthRecordType } from '../../types';
 
@@ -27,7 +27,7 @@ const RECORD_TYPES: HealthRecordType[] = ['vaccine', 'consultation', 'exam', 'su
 export function AddRecordScreen({ navigation, route }: Props) {
   const { petId, recordId } = route.params;
   const { healthRecords, addHealthRecord, updateHealthRecord } = usePetStore();
-  const { user } = useAuthStore();
+  const { user } = useUser();
 
   const existing = recordId
     ? (healthRecords[petId] ?? []).find((r) => r.id === recordId)
@@ -72,7 +72,7 @@ export function AddRecordScreen({ navigation, route }: Props) {
       // Upload new attachments
       const uploadedUrls: string[] = [];
       for (const uri of attachmentUris) {
-        const url = await uploadFile({ bucket: 'record-attachments', userId: user.id, localUri: uri });
+        const url = await uploadFile({ folder: 'record-attachments', userId: user.id, localUri: uri });
         uploadedUrls.push(url);
       }
 
@@ -93,6 +93,7 @@ export function AddRecordScreen({ navigation, route }: Props) {
             attachment_urls: allAttachments.length > 0 ? allAttachments : null,
           },
           petId,
+          user.id,
         );
       } else {
         await addHealthRecord({
@@ -103,7 +104,7 @@ export function AddRecordScreen({ navigation, route }: Props) {
           veterinarian: veterinarian.trim() || null,
           record_date: recordDate,
           attachment_urls: allAttachments.length > 0 ? allAttachments : null,
-        });
+        }, user.id);
       }
       navigation.goBack();
     } catch (err) {

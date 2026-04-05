@@ -11,6 +11,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Calendar, DateData } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useUser } from '@clerk/clerk-expo';
 import { useVetStore } from '../../store/vetStore';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -25,16 +26,18 @@ const STATUS_CONFIG: Record<AppointmentStatus, { color: string; label: string }>
 };
 
 export function AppointmentCalendarScreen({ navigation }: Props) {
+  const { user } = useUser();
+  const userId = user?.id ?? '';
   const { appointments, loading, fetchAppointments, updateAppointment, deleteAppointment } =
     useVetStore();
 
   const [selectedDate, setSelectedDate] = useState<string>('');
 
   useEffect(() => {
-    fetchAppointments();
-  }, [fetchAppointments]);
+    if (userId) fetchAppointments(userId);
+  }, [userId, fetchAppointments]);
 
-  const handleRefresh = useCallback(() => fetchAppointments(), [fetchAppointments]);
+  const handleRefresh = useCallback(() => { if (userId) fetchAppointments(userId); }, [userId, fetchAppointments]);
 
   // Build calendar marks from appointments
   const markedDates = appointments.reduce<Record<string, { marked: boolean; dotColor: string; dots?: { color: string }[] }>>(
@@ -74,7 +77,7 @@ export function AppointmentCalendarScreen({ navigation }: Props) {
         .map((s) => ({
           text: STATUS_CONFIG[s].label,
           onPress: () =>
-            updateAppointment(appt.id, { status: s }).catch(() =>
+            updateAppointment(appt.id, { status: s }, userId).catch(() =>
               Alert.alert('Error', 'Could not update status.'),
             ),
         })),
@@ -82,14 +85,14 @@ export function AppointmentCalendarScreen({ navigation }: Props) {
     ]);
   }
 
-  function handleDelete(appt: Appointment) {
+  function handleDelete(appt: Appointment, uid: string) {
     Alert.alert('Delete Appointment', `Delete "${appt.title}"?`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
         style: 'destructive',
         onPress: () =>
-          deleteAppointment(appt.id).catch(() => Alert.alert('Error', 'Could not delete.')),
+          deleteAppointment(appt.id, uid).catch(() => Alert.alert('Error', 'Could not delete.')),
       },
     ]);
   }
@@ -104,7 +107,7 @@ export function AppointmentCalendarScreen({ navigation }: Props) {
           Alert.alert(item.title, 'Options', [
             { text: 'Change Status', onPress: () => handleStatusChange(item) },
             { text: 'Edit', onPress: () => navigation.navigate('AddAppointment', { appointmentId: item.id }) },
-            { text: 'Delete', style: 'destructive', onPress: () => handleDelete(item) },
+            { text: 'Delete', style: 'destructive', onPress: () => handleDelete(item, userId) },
             { text: 'Cancel', style: 'cancel' },
           ])
         }

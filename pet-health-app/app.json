@@ -54,8 +54,6 @@
       ]
     ],
     "extra": {
-      "supabaseUrl": "SUPABASE_URL_PLACEHOLDER",
-      "supabaseAnonKey": "SUPABASE_ANON_KEY_PLACEHOLDER",
       "eas": {
         "projectId": "your-eas-project-id"
       }

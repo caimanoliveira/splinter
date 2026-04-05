@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import { useUser } from '@clerk/clerk-expo';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { useVetStore } from '../../store/vetStore';
@@ -23,6 +24,8 @@ const STATUS_OPTIONS: AppointmentStatus[] = ['scheduled', 'completed', 'cancelle
 
 export function AddAppointmentScreen({ navigation, route }: Props) {
   const { appointmentId } = route.params ?? {};
+  const { user } = useUser();
+  const userId = user?.id ?? '';
   const { appointments, addAppointment, updateAppointment, vets, fetchVets } = useVetStore();
   const { pets, fetchPets } = usePetStore();
 
@@ -43,8 +46,8 @@ export function AddAppointmentScreen({ navigation, route }: Props) {
   const [errors, setErrors] = useState<{ title?: string; petId?: string; appointmentAt?: string }>({});
 
   useEffect(() => {
-    if (pets.length === 0) fetchPets();
-    if (vets.length === 0) fetchVets();
+    if (pets.length === 0 && userId) fetchPets(userId);
+    if (vets.length === 0 && userId) fetchVets(userId);
   }, [pets.length, vets.length, fetchPets, fetchVets]);
 
   function validate() {
@@ -75,7 +78,7 @@ export function AddAppointmentScreen({ navigation, route }: Props) {
           appointment_at: isoAt,
           status,
           location: location.trim() || null,
-        });
+        }, userId);
       } else {
         await addAppointment({
           title: title.trim(),
@@ -85,7 +88,7 @@ export function AddAppointmentScreen({ navigation, route }: Props) {
           appointment_at: isoAt,
           status,
           location: location.trim() || null,
-        });
+        }, userId);
       }
       navigation.goBack();
     } catch (err) {

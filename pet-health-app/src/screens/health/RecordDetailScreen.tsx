@@ -11,6 +11,7 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useUser } from '@clerk/clerk-expo';
 import { usePetStore } from '../../store/petStore';
 import { Button } from '../../components/common/Button';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
@@ -20,6 +21,7 @@ type Props = NativeStackScreenProps<PetsStackParamList, 'RecordDetail'>;
 
 export function RecordDetailScreen({ navigation, route }: Props) {
   const { recordId } = route.params;
+  const { user } = useUser();
   const { healthRecords, deleteHealthRecord } = usePetStore();
 
   // Find the record across all pet buckets
@@ -47,7 +49,7 @@ export function RecordDetailScreen({ navigation, route }: Props) {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteHealthRecord(record.id, record.pet_id);
+              await deleteHealthRecord(record.id, record.pet_id, user?.id ?? '');
               navigation.goBack();
             } catch {
               Alert.alert('Error', 'Could not delete record.');

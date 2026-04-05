@@ -14,10 +14,10 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useUser } from '@clerk/clerk-expo';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { usePetStore } from '../../store/petStore';
-import { useAuthStore } from '../../store/authStore';
 import { uploadFile } from '../../lib/storage';
 import type { PetsStackParamList, Species } from '../../types';
 
@@ -28,7 +28,7 @@ const SPECIES_OPTIONS: Species[] = ['dog', 'cat', 'bird', 'rabbit', 'fish', 'rep
 export function AddEditPetScreen({ navigation, route }: Props) {
   const { petId } = route.params ?? {};
   const { pets, activePet, addPet, updatePet, fetchPet } = usePetStore();
-  const { user } = useAuthStore();
+  const { user } = useUser();
 
   const existing = petId ? (activePet?.id === petId ? activePet : pets.find((p) => p.id === petId)) : null;
 
@@ -81,7 +81,7 @@ export function AddEditPetScreen({ navigation, route }: Props) {
       if (photoUri && !photoUri.startsWith('https://')) {
         setUploading(true);
         photoUrl = await uploadFile({
-          bucket: 'pet-photos',
+          folder: 'pet-photos',
           userId: user.id,
           localUri: photoUri,
         });
@@ -95,7 +95,7 @@ export function AddEditPetScreen({ navigation, route }: Props) {
           breed: breed.trim() || null,
           birthdate: birthdate || null,
           photo_url: photoUrl,
-        });
+        }, user.id);
       } else {
         const newPet = await addPet({
           name: name.trim(),
@@ -103,7 +103,7 @@ export function AddEditPetScreen({ navigation, route }: Props) {
           breed: breed.trim() || null,
           birthdate: birthdate || null,
           photo_url: photoUrl,
-        });
+        }, user.id);
         navigation.replace('PetDetail', { petId: newPet.id });
         return;
       }

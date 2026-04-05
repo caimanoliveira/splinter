@@ -10,6 +10,7 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useUser } from '@clerk/clerk-expo';
 import { useVetStore } from '../../store/vetStore';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -18,13 +19,15 @@ import type { VetsStackParamList, Vet } from '../../types';
 type Props = NativeStackScreenProps<VetsStackParamList, 'VetRegistry'>;
 
 export function VetRegistryScreen({ navigation }: Props) {
+  const { user } = useUser();
+  const userId = user?.id ?? '';
   const { vets, loading, fetchVets } = useVetStore();
 
   useEffect(() => {
-    fetchVets();
-  }, [fetchVets]);
+    if (userId) fetchVets(userId);
+  }, [userId, fetchVets]);
 
-  const handleRefresh = useCallback(() => fetchVets(), [fetchVets]);
+  const handleRefresh = useCallback(() => { if (userId) fetchVets(userId); }, [userId, fetchVets]);
 
   function renderVet({ item }: { item: Vet }) {
     return (

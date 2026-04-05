@@ -11,6 +11,7 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useUser } from '@clerk/clerk-expo';
 import { useReminderStore } from '../../store/reminderStore';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -27,26 +28,28 @@ const TYPE_CONFIG: Record<ReminderType, { icon: React.ComponentProps<typeof Ioni
 };
 
 export function RemindersScreen({ navigation }: Props) {
+  const { user } = useUser();
+  const userId = user?.id ?? '';
   const { reminders, loading, fetchReminders, markCompleted, deleteReminder } =
     useReminderStore();
 
   useEffect(() => {
-    fetchReminders();
-  }, [fetchReminders]);
+    if (userId) fetchReminders(userId);
+  }, [userId, fetchReminders]);
 
-  const handleRefresh = useCallback(() => fetchReminders(), [fetchReminders]);
+  const handleRefresh = useCallback(() => { if (userId) fetchReminders(userId); }, [userId, fetchReminders]);
 
   const upcoming = reminders.filter((r) => !r.is_completed);
   const done = reminders.filter((r) => r.is_completed);
 
   function handleLongPress(item: Reminder) {
     Alert.alert(item.title, 'What would you like to do?', [
-      { text: 'Mark done', onPress: () => markCompleted(item.id) },
+      { text: 'Mark done', onPress: () => markCompleted(item.id, userId) },
       { text: 'Edit', onPress: () => navigation.navigate('AddReminder', { reminderId: item.id }) },
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => deleteReminder(item.id).catch(() => Alert.alert('Error', 'Could not delete reminder.')),
+        onPress: () => deleteReminder(item.id, userId).catch(() => Alert.alert('Error', 'Could not delete reminder.')),
       },
       { text: 'Cancel', style: 'cancel' },
     ]);

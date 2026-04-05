@@ -2,22 +2,32 @@ import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import { useAuth, useUser } from '@clerk/clerk-expo';
 
-import { useAuthStore } from '../store/authStore';
 import { AuthNavigator } from './AuthNavigator';
 import { MainNavigator } from './MainNavigator';
+import { useProfileStore } from '../store/authStore';
 import type { RootStackParamList } from '../types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
-  const { session, loading, initialize } = useAuthStore();
+  const { isSignedIn, isLoaded } = useAuth();
+  const { user } = useUser();
+  const { syncProfile } = useProfileStore();
 
+  // Sync Clerk user data into our `users` table on sign-in
   useEffect(() => {
-    initialize();
-  }, [initialize]);
+    if (isSignedIn && user) {
+      const fullName =
+        user.fullName ??
+        [user.firstName, user.lastName].filter(Boolean).join(' ') ??
+        null;
+      syncProfile(user.id, fullName);
+    }
+  }, [isSignedIn, user, syncProfile]);
 
-  if (loading) {
+  if (!isLoaded) {
     return (
       <View style={styles.loader}>
         <ActivityIndicator size="large" color="#4CAF82" />
@@ -28,7 +38,7 @@ export function RootNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {session ? (
+        {isSignedIn ? (
           <Stack.Screen name="Main" component={MainNavigator} />
         ) : (
           <Stack.Screen name="Auth" component={AuthNavigator} />
@@ -39,10 +49,5 @@ export function RootNavigator() {
 }
 
 const styles = StyleSheet.create({
-  loader: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-  },
+  loader: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
 });

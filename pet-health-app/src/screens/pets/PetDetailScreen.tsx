@@ -11,6 +11,7 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useUser } from '@clerk/clerk-expo';
 import { usePetStore } from '../../store/petStore';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { WeightChart } from '../../components/pets/WeightChart';
@@ -21,13 +22,16 @@ type Props = NativeStackScreenProps<PetsStackParamList, 'PetDetail'>;
 
 export function PetDetailScreen({ navigation, route }: Props) {
   const { petId } = route.params;
+  const { user } = useUser();
+  const userId = user?.id ?? '';
   const { activePet, weightLogs, loading, fetchPet, fetchWeightLogs, deletePet, addWeightLog } =
     usePetStore();
 
   useEffect(() => {
-    fetchPet(petId);
-    fetchWeightLogs(petId);
-  }, [petId, fetchPet, fetchWeightLogs]);
+    if (!userId) return;
+    fetchPet(petId, userId);
+    fetchWeightLogs(petId, userId);
+  }, [petId, userId, fetchPet, fetchWeightLogs]);
 
   const logs = weightLogs[petId] ?? [];
   const latestWeight = logs.length > 0 ? logs[logs.length - 1] : null;
@@ -43,7 +47,7 @@ export function PetDetailScreen({ navigation, route }: Props) {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deletePet(petId);
+              await deletePet(petId, userId);
               navigation.goBack();
             } catch {
               Alert.alert('Error', 'Could not remove pet. Please try again.');
@@ -71,7 +75,7 @@ export function PetDetailScreen({ navigation, route }: Props) {
             weight_kg: num,
             logged_at: new Date().toISOString().split('T')[0] ?? new Date().toISOString(),
             notes: null,
-          });
+          }, userId);
         } catch {
           Alert.alert('Error', 'Could not save weight entry.');
         }

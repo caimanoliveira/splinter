@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import { useUser } from '@clerk/clerk-expo';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { useVetStore } from '../../store/vetStore';
@@ -17,6 +18,8 @@ type Props = NativeStackScreenProps<VetsStackParamList, 'AddEditVet'>;
 
 export function AddEditVetScreen({ navigation, route }: Props) {
   const { vetId } = route.params ?? {};
+  const { user } = useUser();
+  const userId = user?.id ?? '';
   const { vets, addVet, updateVet } = useVetStore();
   const existing = vetId ? vets.find((v) => v.id === vetId) : null;
 
@@ -49,7 +52,7 @@ export function AddEditVetScreen({ navigation, route }: Props) {
           email: email.trim() || null,
           specialty: specialty.trim() || null,
           notes: notes.trim() || null,
-        });
+        }, userId);
         navigation.goBack();
       } else {
         const newVet = await addVet({
@@ -59,7 +62,7 @@ export function AddEditVetScreen({ navigation, route }: Props) {
           email: email.trim() || null,
           specialty: specialty.trim() || null,
           notes: notes.trim() || null,
-        });
+        }, userId);
         navigation.replace('VetDetail', { vetId: newVet.id });
       }
     } catch (err) {

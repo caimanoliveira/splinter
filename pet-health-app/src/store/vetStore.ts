@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
+import { sql } from '../lib/db';
 import type { Vet, Appointment } from '../types';
 
 interface VetState {
@@ -8,17 +8,18 @@ interface VetState {
   loading: boolean;
   error: string | null;
 
-  fetchVets: () => Promise<void>;
-  addVet: (vet: Omit<Vet, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => Promise<Vet>;
-  updateVet: (id: string, updates: Partial<Vet>) => Promise<void>;
-  deleteVet: (id: string) => Promise<void>;
+  fetchVets: (userId: string) => Promise<void>;
+  addVet: (vet: Omit<Vet, 'id' | 'owner_id' | 'created_at' | 'updated_at'>, userId: string) => Promise<Vet>;
+  updateVet: (id: string, updates: Partial<Vet>, userId: string) => Promise<void>;
+  deleteVet: (id: string, userId: string) => Promise<void>;
 
-  fetchAppointments: () => Promise<void>;
+  fetchAppointments: (userId: string) => Promise<void>;
   addAppointment: (
     appt: Omit<Appointment, 'id' | 'owner_id' | 'created_at' | 'updated_at' | 'pet' | 'vet'>,
+    userId: string,
   ) => Promise<Appointment>;
-  updateAppointment: (id: string, updates: Partial<Appointment>) => Promise<void>;
-  deleteAppointment: (id: string) => Promise<void>;
+  updateAppointment: (id: string, updates: Partial<Appointment>, userId: string) => Promise<void>;
+  deleteAppointment: (id: string, userId: string) => Promise<void>;
 
   clearError: () => void;
 }
@@ -29,120 +30,149 @@ export const useVetStore = create<VetState>((set) => ({
   loading: false,
   error: null,
 
-  fetchVets: async () => {
-    set({ loading: true, error: null });
-    const { data, error } = await supabase
-      .from('vets')
-      .select('*')
-      .order('name');
+  // ── Vets ─────────────────────────────────────────────────
 
-    if (error) {
-      set({ loading: false, error: error.message });
-      return;
+  fetchVets: async (userId) => {
+    set({ loading: true, error: null });
+    try {
+      const rows = await sql`
+        SELECT * FROM vets WHERE owner_id = ${userId} ORDER BY name ASC
+      `;
+      set({ vets: rows as Vet[], loading: false });
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
     }
-    set({ vets: (data as Vet[]) ?? [], loading: false });
   },
 
-  addVet: async (vet) => {
+  addVet: async (vet, userId) => {
     set({ loading: true, error: null });
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
-
-    const { data, error } = await supabase
-      .from('vets')
-      .insert({ ...vet, owner_id: user.id })
-      .select()
-      .single();
-
-    if (error) {
-      set({ loading: false, error: error.message });
-      throw error;
+    try {
+      const rows = await sql`
+        INSERT INTO vets (owner_id, name, clinic, phone, email, specialty, notes)
+        VALUES (${userId}, ${vet.name}, ${vet.clinic ?? null}, ${vet.phone ?? null},
+                ${vet.email ?? null}, ${vet.specialty ?? null}, ${vet.notes ?? null})
+        RETURNING *
+      `;
+      const newVet = rows[0] as Vet;
+      set((s) => ({ vets: [...s.vets, newVet], loading: false }));
+      return newVet;
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
+      throw err;
     }
-
-    const newVet = data as Vet;
-    set((s) => ({ vets: [...s.vets, newVet], loading: false }));
-    return newVet;
   },
 
-  updateVet: async (id, updates) => {
-    const { data, error } = await supabase
-      .from('vets')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
+  updateVet: async (id, updates, userId) => {
+    const rows = await sql`
+      UPDATE vets SET
+        name       = COALESCE(${updates.name ?? null}, name),
+        clinic     = ${updates.clinic ?? null},
+        phone      = ${updates.phone ?? null},
+        email      = ${updates.email ?? null},
+        specialty  = ${updates.specialty ?? null},
+        notes      = ${updates.notes ?? null},
+        updated_at = NOW()
+      WHERE id = ${id} AND owner_id = ${userId}
+      RETURNING *
+    `;
     set((s) => ({
-      vets: s.vets.map((v) => (v.id === id ? (data as Vet) : v)),
+      vets: s.vets.map((v) => (v.id === id ? (rows[0] as Vet) : v)),
     }));
   },
 
-  deleteVet: async (id) => {
-    const { error } = await supabase.from('vets').delete().eq('id', id);
-    if (error) throw error;
+  deleteVet: async (id, userId) => {
+    await sql`DELETE FROM vets WHERE id = ${id} AND owner_id = ${userId}`;
     set((s) => ({ vets: s.vets.filter((v) => v.id !== id) }));
   },
 
   // ── Appointments ─────────────────────────────────────────
 
-  fetchAppointments: async () => {
+  fetchAppointments: async (userId) => {
     set({ loading: true, error: null });
-    const { data, error } = await supabase
-      .from('appointments')
-      .select('*, pet:pets(id, name, species), vet:vets(id, name, clinic)')
-      .order('appointment_at', { ascending: true });
-
-    if (error) {
-      set({ loading: false, error: error.message });
-      return;
+    try {
+      const rows = await sql`
+        SELECT
+          a.*,
+          row_to_json(p.*) AS pet,
+          row_to_json(v.*) AS vet
+        FROM appointments a
+        LEFT JOIN pets p ON p.id = a.pet_id
+        LEFT JOIN vets v ON v.id = a.vet_id
+        WHERE a.owner_id = ${userId}
+        ORDER BY a.appointment_at ASC
+      `;
+      set({ appointments: rows as Appointment[], loading: false });
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
     }
-    set({ appointments: (data as Appointment[]) ?? [], loading: false });
   },
 
-  addAppointment: async (appt) => {
+  addAppointment: async (appt, userId) => {
     set({ loading: true, error: null });
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    try {
+      const rows = await sql`
+        INSERT INTO appointments
+          (owner_id, pet_id, vet_id, title, description, appointment_at, status, location)
+        VALUES
+          (${userId}, ${appt.pet_id}, ${appt.vet_id ?? null}, ${appt.title},
+           ${appt.description ?? null}, ${appt.appointment_at}, ${appt.status}, ${appt.location ?? null})
+        RETURNING *
+      `;
 
-    const { data, error } = await supabase
-      .from('appointments')
-      .insert({ ...appt, owner_id: user.id })
-      .select('*, pet:pets(id, name, species), vet:vets(id, name, clinic)')
-      .single();
+      const withJoins = await sql`
+        SELECT a.*, row_to_json(p.*) AS pet, row_to_json(v.*) AS vet
+        FROM appointments a
+        LEFT JOIN pets p ON p.id = a.pet_id
+        LEFT JOIN vets v ON v.id = a.vet_id
+        WHERE a.id = ${(rows[0] as { id: string }).id}
+      `;
 
-    if (error) {
-      set({ loading: false, error: error.message });
-      throw error;
+      const newAppt = withJoins[0] as Appointment;
+      set((s) => ({
+        appointments: [...s.appointments, newAppt].sort((a, b) =>
+          a.appointment_at.localeCompare(b.appointment_at),
+        ),
+        loading: false,
+      }));
+      return newAppt;
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
+      throw err;
     }
+  },
 
-    const newAppt = data as Appointment;
+  updateAppointment: async (id, updates, userId) => {
+    const rows = await sql`
+      UPDATE appointments SET
+        title          = COALESCE(${updates.title ?? null}, title),
+        description    = ${updates.description ?? null},
+        pet_id         = COALESCE(${updates.pet_id ?? null}, pet_id),
+        vet_id         = ${updates.vet_id ?? null},
+        appointment_at = COALESCE(${updates.appointment_at ?? null}, appointment_at),
+        status         = COALESCE(${updates.status ?? null}, status),
+        location       = ${updates.location ?? null},
+        updated_at     = NOW()
+      WHERE id = ${id} AND owner_id = ${userId}
+      RETURNING *
+    `;
+
+    const withJoins = await sql`
+      SELECT a.*, row_to_json(p.*) AS pet, row_to_json(v.*) AS vet
+      FROM appointments a
+      LEFT JOIN pets p ON p.id = a.pet_id
+      LEFT JOIN vets v ON v.id = a.vet_id
+      WHERE a.id = ${(rows[0] as { id: string }).id}
+    `;
+
     set((s) => ({
-      appointments: [...s.appointments, newAppt].sort((a, b) =>
-        a.appointment_at.localeCompare(b.appointment_at),
+      appointments: s.appointments.map((a) =>
+        a.id === id ? (withJoins[0] as Appointment) : a,
       ),
-      loading: false,
-    }));
-    return newAppt;
-  },
-
-  updateAppointment: async (id, updates) => {
-    const { data, error } = await supabase
-      .from('appointments')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select('*, pet:pets(id, name, species), vet:vets(id, name, clinic)')
-      .single();
-
-    if (error) throw error;
-    set((s) => ({
-      appointments: s.appointments.map((a) => (a.id === id ? (data as Appointment) : a)),
     }));
   },
 
-  deleteAppointment: async (id) => {
-    const { error } = await supabase.from('appointments').delete().eq('id', id);
-    if (error) throw error;
+  deleteAppointment: async (id, userId) => {
+    await sql`DELETE FROM appointments WHERE id = ${id} AND owner_id = ${userId}`;
     set((s) => ({ appointments: s.appointments.filter((a) => a.id !== id) }));
   },
 

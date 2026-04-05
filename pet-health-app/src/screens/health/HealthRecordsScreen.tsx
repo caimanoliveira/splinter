@@ -10,6 +10,7 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useUser } from '@clerk/clerk-expo';
 import { usePetStore } from '../../store/petStore';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -27,17 +28,19 @@ const TYPE_CONFIG: Record<HealthRecordType, { icon: React.ComponentProps<typeof 
 
 export function HealthRecordsScreen({ navigation, route }: Props) {
   const { petId } = route.params;
+  const { user } = useUser();
+  const userId = user?.id ?? '';
   const { healthRecords, loading, fetchHealthRecords } = usePetStore();
 
   const records = healthRecords[petId] ?? [];
 
   useEffect(() => {
-    fetchHealthRecords(petId);
-  }, [petId, fetchHealthRecords]);
+    if (userId) fetchHealthRecords(petId, userId);
+  }, [petId, userId, fetchHealthRecords]);
 
   const handleRefresh = useCallback(() => {
-    fetchHealthRecords(petId);
-  }, [petId, fetchHealthRecords]);
+    if (userId) fetchHealthRecords(petId, userId);
+  }, [petId, userId, fetchHealthRecords]);
 
   function renderRecord({ item }: { item: HealthRecord }) {
     const config = TYPE_CONFIG[item.record_type];

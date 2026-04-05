@@ -1,30 +1,30 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
+import { sql } from '../lib/db';
 import type { Pet, WeightLog, HealthRecord } from '../types';
 
 interface PetState {
   pets: Pet[];
   activePet: Pet | null;
-  weightLogs: Record<string, WeightLog[]>;   // keyed by pet_id
-  healthRecords: Record<string, HealthRecord[]>;  // keyed by pet_id
+  weightLogs: Record<string, WeightLog[]>;
+  healthRecords: Record<string, HealthRecord[]>;
   loading: boolean;
   error: string | null;
 
-  fetchPets: () => Promise<void>;
-  fetchPet: (petId: string) => Promise<void>;
-  addPet: (pet: Omit<Pet, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => Promise<Pet>;
-  updatePet: (petId: string, updates: Partial<Pet>) => Promise<void>;
-  deletePet: (petId: string) => Promise<void>;
+  fetchPets: (userId: string) => Promise<void>;
+  fetchPet: (petId: string, userId: string) => Promise<void>;
+  addPet: (pet: Omit<Pet, 'id' | 'owner_id' | 'created_at' | 'updated_at'>, userId: string) => Promise<Pet>;
+  updatePet: (petId: string, updates: Partial<Pet>, userId: string) => Promise<void>;
+  deletePet: (petId: string, userId: string) => Promise<void>;
   setActivePet: (pet: Pet | null) => void;
 
-  fetchWeightLogs: (petId: string) => Promise<void>;
-  addWeightLog: (log: Omit<WeightLog, 'id' | 'owner_id' | 'created_at'>) => Promise<void>;
-  deleteWeightLog: (logId: string, petId: string) => Promise<void>;
+  fetchWeightLogs: (petId: string, userId: string) => Promise<void>;
+  addWeightLog: (log: Omit<WeightLog, 'id' | 'owner_id' | 'created_at'>, userId: string) => Promise<void>;
+  deleteWeightLog: (logId: string, petId: string, userId: string) => Promise<void>;
 
-  fetchHealthRecords: (petId: string) => Promise<void>;
-  addHealthRecord: (record: Omit<HealthRecord, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => Promise<HealthRecord>;
-  updateHealthRecord: (recordId: string, updates: Partial<HealthRecord>, petId: string) => Promise<void>;
-  deleteHealthRecord: (recordId: string, petId: string) => Promise<void>;
+  fetchHealthRecords: (petId: string, userId: string) => Promise<void>;
+  addHealthRecord: (record: Omit<HealthRecord, 'id' | 'owner_id' | 'created_at' | 'updated_at'>, userId: string) => Promise<HealthRecord>;
+  updateHealthRecord: (recordId: string, updates: Partial<HealthRecord>, petId: string, userId: string) => Promise<void>;
+  deleteHealthRecord: (recordId: string, petId: string, userId: string) => Promise<void>;
 
   clearError: () => void;
 }
@@ -37,119 +37,108 @@ export const usePetStore = create<PetState>((set, get) => ({
   loading: false,
   error: null,
 
-  fetchPets: async () => {
+  // ── Pets ──────────────────────────────────────────────────
+
+  fetchPets: async (userId) => {
     set({ loading: true, error: null });
-    const { data, error } = await supabase
-      .from('pets')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      set({ loading: false, error: error.message });
-      return;
-    }
-    set({ pets: (data as Pet[]) ?? [], loading: false });
-  },
-
-  fetchPet: async (petId) => {
-    const { data, error } = await supabase
-      .from('pets')
-      .select('*')
-      .eq('id', petId)
-      .single();
-
-    if (!error && data) {
-      set({ activePet: data as Pet });
+    try {
+      const rows = await sql`
+        SELECT * FROM pets
+        WHERE owner_id = ${userId}
+        ORDER BY created_at DESC
+      `;
+      set({ pets: rows as Pet[], loading: false });
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
     }
   },
 
-  addPet: async (pet) => {
+  fetchPet: async (petId, userId) => {
+    const rows = await sql`
+      SELECT * FROM pets WHERE id = ${petId} AND owner_id = ${userId}
+    `;
+    if (rows[0]) set({ activePet: rows[0] as Pet });
+  },
+
+  addPet: async (pet, userId) => {
     set({ loading: true, error: null });
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
-
-    const { data, error } = await supabase
-      .from('pets')
-      .insert({ ...pet, owner_id: user.id })
-      .select()
-      .single();
-
-    if (error) {
-      set({ loading: false, error: error.message });
-      throw error;
+    try {
+      const rows = await sql`
+        INSERT INTO pets (owner_id, name, species, breed, birthdate, photo_url)
+        VALUES (${userId}, ${pet.name}, ${pet.species}, ${pet.breed ?? null},
+                ${pet.birthdate ?? null}, ${pet.photo_url ?? null})
+        RETURNING *
+      `;
+      const newPet = rows[0] as Pet;
+      set((s) => ({ pets: [newPet, ...s.pets], loading: false }));
+      return newPet;
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
+      throw err;
     }
-
-    const newPet = data as Pet;
-    set((s) => ({ pets: [newPet, ...s.pets], loading: false }));
-    return newPet;
   },
 
-  updatePet: async (petId, updates) => {
-    set({ loading: true, error: null });
-    const { data, error } = await supabase
-      .from('pets')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', petId)
-      .select()
-      .single();
-
-    if (error) {
-      set({ loading: false, error: error.message });
-      throw error;
-    }
-
-    const updated = data as Pet;
-    set((s) => ({
-      pets: s.pets.map((p) => (p.id === petId ? updated : p)),
-      activePet: s.activePet?.id === petId ? updated : s.activePet,
-      loading: false,
-    }));
-  },
-
-  deletePet: async (petId) => {
+  updatePet: async (petId, updates, userId) => {
     set({ loading: true });
-    const { error } = await supabase.from('pets').delete().eq('id', petId);
-    if (error) {
-      set({ loading: false, error: error.message });
-      throw error;
+    try {
+      const rows = await sql`
+        UPDATE pets SET
+          name       = COALESCE(${updates.name ?? null}, name),
+          species    = COALESCE(${updates.species ?? null}, species),
+          breed      = ${updates.breed ?? null},
+          birthdate  = ${updates.birthdate ?? null},
+          photo_url  = ${updates.photo_url ?? null},
+          updated_at = NOW()
+        WHERE id = ${petId} AND owner_id = ${userId}
+        RETURNING *
+      `;
+      const updated = rows[0] as Pet;
+      set((s) => ({
+        pets: s.pets.map((p) => (p.id === petId ? updated : p)),
+        activePet: s.activePet?.id === petId ? updated : s.activePet,
+        loading: false,
+      }));
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
+      throw err;
     }
-    set((s) => ({
-      pets: s.pets.filter((p) => p.id !== petId),
-      loading: false,
-    }));
+  },
+
+  deletePet: async (petId, userId) => {
+    set({ loading: true });
+    try {
+      await sql`DELETE FROM pets WHERE id = ${petId} AND owner_id = ${userId}`;
+      set((s) => ({ pets: s.pets.filter((p) => p.id !== petId), loading: false }));
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
+      throw err;
+    }
   },
 
   setActivePet: (pet) => set({ activePet: pet }),
 
   // ── Weight logs ──────────────────────────────────────────
 
-  fetchWeightLogs: async (petId) => {
-    const { data, error } = await supabase
-      .from('weight_logs')
-      .select('*')
-      .eq('pet_id', petId)
-      .order('logged_at', { ascending: true });
-
-    if (!error) {
-      set((s) => ({
-        weightLogs: { ...s.weightLogs, [petId]: (data as WeightLog[]) ?? [] },
-      }));
+  fetchWeightLogs: async (petId, userId) => {
+    try {
+      const rows = await sql`
+        SELECT * FROM weight_logs
+        WHERE pet_id = ${petId} AND owner_id = ${userId}
+        ORDER BY logged_at ASC
+      `;
+      set((s) => ({ weightLogs: { ...s.weightLogs, [petId]: rows as WeightLog[] } }));
+    } catch (err) {
+      console.error('[petStore] fetchWeightLogs', err);
     }
   },
 
-  addWeightLog: async (log) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
-
-    const { data, error } = await supabase
-      .from('weight_logs')
-      .insert({ ...log, owner_id: user.id })
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    const newLog = data as WeightLog;
+  addWeightLog: async (log, userId) => {
+    const rows = await sql`
+      INSERT INTO weight_logs (pet_id, owner_id, weight_kg, logged_at, notes)
+      VALUES (${log.pet_id}, ${userId}, ${log.weight_kg}, ${log.logged_at}, ${log.notes ?? null})
+      RETURNING *
+    `;
+    const newLog = rows[0] as WeightLog;
     set((s) => {
       const existing = s.weightLogs[log.pet_id] ?? [];
       return {
@@ -163,9 +152,8 @@ export const usePetStore = create<PetState>((set, get) => ({
     });
   },
 
-  deleteWeightLog: async (logId, petId) => {
-    const { error } = await supabase.from('weight_logs').delete().eq('id', logId);
-    if (error) throw error;
+  deleteWeightLog: async (logId, petId, userId) => {
+    await sql`DELETE FROM weight_logs WHERE id = ${logId} AND owner_id = ${userId}`;
     set((s) => ({
       weightLogs: {
         ...s.weightLogs,
@@ -176,56 +164,51 @@ export const usePetStore = create<PetState>((set, get) => ({
 
   // ── Health records ───────────────────────────────────────
 
-  fetchHealthRecords: async (petId) => {
-    const { data, error } = await supabase
-      .from('health_records')
-      .select('*')
-      .eq('pet_id', petId)
-      .order('record_date', { ascending: false });
-
-    if (!error) {
-      set((s) => ({
-        healthRecords: { ...s.healthRecords, [petId]: (data as HealthRecord[]) ?? [] },
-      }));
+  fetchHealthRecords: async (petId, userId) => {
+    try {
+      const rows = await sql`
+        SELECT * FROM health_records
+        WHERE pet_id = ${petId} AND owner_id = ${userId}
+        ORDER BY record_date DESC
+      `;
+      set((s) => ({ healthRecords: { ...s.healthRecords, [petId]: rows as HealthRecord[] } }));
+    } catch (err) {
+      console.error('[petStore] fetchHealthRecords', err);
     }
   },
 
-  addHealthRecord: async (record) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
-
-    const { data, error } = await supabase
-      .from('health_records')
-      .insert({ ...record, owner_id: user.id })
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    const newRecord = data as HealthRecord;
+  addHealthRecord: async (record, userId) => {
+    const rows = await sql`
+      INSERT INTO health_records
+        (pet_id, owner_id, record_type, title, description, veterinarian, record_date, attachment_urls)
+      VALUES
+        (${record.pet_id}, ${userId}, ${record.record_type}, ${record.title},
+         ${record.description ?? null}, ${record.veterinarian ?? null},
+         ${record.record_date}, ${record.attachment_urls ?? null})
+      RETURNING *
+    `;
+    const newRecord = rows[0] as HealthRecord;
     set((s) => {
       const existing = s.healthRecords[record.pet_id] ?? [];
-      return {
-        healthRecords: {
-          ...s.healthRecords,
-          [record.pet_id]: [newRecord, ...existing],
-        },
-      };
+      return { healthRecords: { ...s.healthRecords, [record.pet_id]: [newRecord, ...existing] } };
     });
     return newRecord;
   },
 
-  updateHealthRecord: async (recordId, updates, petId) => {
-    const { data, error } = await supabase
-      .from('health_records')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', recordId)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    const updated = data as HealthRecord;
+  updateHealthRecord: async (recordId, updates, petId, userId) => {
+    const rows = await sql`
+      UPDATE health_records SET
+        record_type     = COALESCE(${updates.record_type ?? null}, record_type),
+        title           = COALESCE(${updates.title ?? null}, title),
+        description     = ${updates.description ?? null},
+        veterinarian    = ${updates.veterinarian ?? null},
+        record_date     = COALESCE(${updates.record_date ?? null}, record_date),
+        attachment_urls = ${updates.attachment_urls ?? null},
+        updated_at      = NOW()
+      WHERE id = ${recordId} AND owner_id = ${userId}
+      RETURNING *
+    `;
+    const updated = rows[0] as HealthRecord;
     set((s) => ({
       healthRecords: {
         ...s.healthRecords,
@@ -236,9 +219,8 @@ export const usePetStore = create<PetState>((set, get) => ({
     }));
   },
 
-  deleteHealthRecord: async (recordId, petId) => {
-    const { error } = await supabase.from('health_records').delete().eq('id', recordId);
-    if (error) throw error;
+  deleteHealthRecord: async (recordId, petId, userId) => {
+    await sql`DELETE FROM health_records WHERE id = ${recordId} AND owner_id = ${userId}`;
     set((s) => ({
       healthRecords: {
         ...s.healthRecords,

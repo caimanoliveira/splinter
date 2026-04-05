@@ -2,12 +2,18 @@ import 'react-native-url-polyfill/auto';
 import React, { useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { ClerkProvider } from '@clerk/clerk-expo';
 import * as Notifications from 'expo-notifications';
-import { NavigationContainerRef } from '@react-navigation/native';
 
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { clerkTokenCache } from './src/lib/auth';
 
-// Notification handler: show alert while app is foregrounded
+const CLERK_PUBLISHABLE_KEY = process.env['EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY'] ?? '';
+
+if (!CLERK_PUBLISHABLE_KEY) {
+  console.warn('[App] Missing EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in .env');
+}
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -17,39 +23,28 @@ Notifications.setNotificationHandler({
 });
 
 export default function App() {
-  const notificationListener = useRef<Notifications.Subscription>();
+  const notifListener = useRef<Notifications.Subscription>();
   const responseListener = useRef<Notifications.Subscription>();
 
   useEffect(() => {
-    // Listen for incoming notifications (foreground)
-    notificationListener.current = Notifications.addNotificationReceivedListener(
-      (_notification) => {
-        // Optionally update badge / state here
-      },
+    notifListener.current = Notifications.addNotificationReceivedListener(
+      (_n) => { /* update badge / in-app state here if needed */ },
     );
-
-    // Listen for user tapping a notification
     responseListener.current = Notifications.addNotificationResponseReceivedListener(
-      (_response) => {
-        // Navigate to relevant screen based on notification data
-        // e.g. _response.notification.request.content.data
-      },
+      (_r) => { /* deep-link into the relevant reminder/appointment */ },
     );
-
     return () => {
-      if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
-      }
-      if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
-      }
+      notifListener.current && Notifications.removeNotificationSubscription(notifListener.current);
+      responseListener.current && Notifications.removeNotificationSubscription(responseListener.current);
     };
   }, []);
 
   return (
-    <SafeAreaProvider>
-      <StatusBar style="light" />
-      <RootNavigator />
-    </SafeAreaProvider>
+    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY} tokenCache={clerkTokenCache}>
+      <SafeAreaProvider>
+        <StatusBar style="light" />
+        <RootNavigator />
+      </SafeAreaProvider>
+    </ClerkProvider>
   );
 }

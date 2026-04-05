@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import { useUser } from '@clerk/clerk-expo';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { useReminderStore } from '../../store/reminderStore';
@@ -24,6 +25,8 @@ const REMINDER_TYPES: ReminderType[] = ['vaccine', 'consultation', 'medication',
 
 export function AddReminderScreen({ navigation, route }: Props) {
   const { reminderId, petId: initialPetId } = route.params ?? {};
+  const { user } = useUser();
+  const userId = user?.id ?? '';
   const { reminders, addReminder, updateReminder } = useReminderStore();
   const { pets, fetchPets } = usePetStore();
 
@@ -46,7 +49,7 @@ export function AddReminderScreen({ navigation, route }: Props) {
   const [errors, setErrors] = useState<{ title?: string; petId?: string; remindAt?: string }>({});
 
   useEffect(() => {
-    if (pets.length === 0) fetchPets();
+    if (pets.length === 0 && userId) fetchPets(userId);
   }, [pets.length, fetchPets]);
 
   function validate() {
@@ -78,7 +81,7 @@ export function AddReminderScreen({ navigation, route }: Props) {
           remind_at: isoRemindAt,
           is_recurring: isRecurring,
           recurrence_days: isRecurring && recurrenceDays ? parseInt(recurrenceDays, 10) : null,
-        });
+        }, userId);
       } else {
         await addReminder({
           title: title.trim(),
@@ -89,7 +92,7 @@ export function AddReminderScreen({ navigation, route }: Props) {
           is_recurring: isRecurring,
           recurrence_days: isRecurring && recurrenceDays ? parseInt(recurrenceDays, 10) : null,
           is_completed: false,
-        });
+        }, userId);
       }
       navigation.goBack();
     } catch (err) {

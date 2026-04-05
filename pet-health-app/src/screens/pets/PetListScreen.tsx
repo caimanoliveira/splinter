@@ -11,8 +11,8 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useAuth, useUser, useClerk } from '@clerk/clerk-expo';
 import { usePetStore } from '../../store/petStore';
-import { useAuthStore } from '../../store/authStore';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { EmptyState } from '../../components/common/EmptyState';
 import type { PetsStackParamList, Pet } from '../../types';
@@ -31,15 +31,17 @@ const SPECIES_EMOJI: Record<string, string> = {
 
 export function PetListScreen({ navigation }: Props) {
   const { pets, loading, fetchPets } = usePetStore();
-  const { profile, signOut } = useAuthStore();
+  const { user } = useUser();
+  const { signOut } = useClerk();
+  const userId = user?.id ?? '';
 
   useEffect(() => {
-    fetchPets();
-  }, [fetchPets]);
+    if (userId) fetchPets(userId);
+  }, [userId, fetchPets]);
 
   const handleRefresh = useCallback(() => {
-    fetchPets();
-  }, [fetchPets]);
+    if (userId) fetchPets(userId);
+  }, [userId, fetchPets]);
 
   function renderPet({ item }: { item: Pet }) {
     return (
@@ -79,7 +81,7 @@ export function PetListScreen({ navigation }: Props) {
       {/* User greeting */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Hello, {profile?.full_name?.split(' ')[0] ?? 'there'} 👋</Text>
+          <Text style={styles.greeting}>Hello, {user?.firstName ?? 'there'} 👋</Text>
           <Text style={styles.subGreeting}>{pets.length} pet{pets.length !== 1 ? 's' : ''} registered</Text>
         </View>
         <TouchableOpacity onPress={() => signOut()} style={styles.signOutBtn}>

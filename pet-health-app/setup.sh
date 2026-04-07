@@ -23,7 +23,8 @@ echo "==> Fixing native package versions for SDK 54..."
   expo-secure-store \
   expo-auth-session \
   expo-web-browser \
-  expo-linking
+  expo-linking \
+  expo-linear-gradient
 
 echo "==> Starting Expo..."
 ./node_modules/.bin/expo start --clear

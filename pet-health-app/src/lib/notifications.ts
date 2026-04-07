@@ -1,7 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import { Platform } from 'react-native';
-import { supabase } from './supabase';
 
 // Configure foreground notification behaviour
 Notifications.setNotificationHandler({
@@ -15,13 +13,11 @@ Notifications.setNotificationHandler({
 /**
  * Request permissions and return the Expo push token string.
  * Returns null on simulators or when permission is denied.
+ *
+ * Note: expo-device is no longer required — we use
+ * Notifications.getPermissionsAsync() which works on all environments.
  */
 export async function registerForPushNotifications(): Promise<string | null> {
-  if (!Device.isDevice) {
-    console.log('[Notifications] Push tokens are not available on simulators.');
-    return null;
-  }
-
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
 
@@ -44,8 +40,13 @@ export async function registerForPushNotifications(): Promise<string | null> {
     });
   }
 
-  const token = (await Notifications.getExpoPushTokenAsync()).data;
-  return token;
+  try {
+    const token = (await Notifications.getExpoPushTokenAsync()).data;
+    return token;
+  } catch {
+    // Simulators and environments without a push token service return an error
+    return null;
+  }
 }
 
 /**
@@ -84,9 +85,8 @@ export async function cancelAllLocalNotifications(): Promise<void> {
 }
 
 /**
- * Persist the push token for the current user in Supabase
- * (stored on the reminder row when creating reminders).
- * This helper just returns the token; callers decide where to store it.
+ * Returns the Expo push token for the current device.
+ * Stored on reminder rows so push notifications can be targeted.
  */
 export async function getOrRegisterPushToken(): Promise<string | null> {
   return registerForPushNotifications();

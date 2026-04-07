@@ -11,14 +11,14 @@ export {
   useSignIn,
   useSignUp,
   useClerk,
-} from '@clerk/clerk-expo';
+} from '@clerk/expo';
 
 /**
  * SecureStore-backed token cache for Clerk.
  * Pass this to <ClerkProvider tokenCache={clerkTokenCache}>.
  */
 import * as SecureStore from 'expo-secure-store';
-import type { TokenCache } from '@clerk/clerk-expo';
+import type { TokenCache } from '@clerk/expo';
 
 export const clerkTokenCache: TokenCache = {
   getToken: (key: string) => SecureStore.getItemAsync(key),

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { useUser } from '@clerk/clerk-expo';
+import { useUser } from '@clerk/expo';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { useReminderStore } from '../../store/reminderStore';

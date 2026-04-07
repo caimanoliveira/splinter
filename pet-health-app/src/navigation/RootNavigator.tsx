@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
-import { useAuth, useUser } from '@clerk/clerk-expo';
+import { useAuth, useUser } from '@clerk/expo';
 
 import { AuthNavigator } from './AuthNavigator';
 import { MainNavigator } from './MainNavigator';

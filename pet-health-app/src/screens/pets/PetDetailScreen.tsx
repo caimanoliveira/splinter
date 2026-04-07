@@ -11,7 +11,7 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
-import { useUser } from '@clerk/clerk-expo';
+import { useUser } from '@clerk/expo';
 import { usePetStore } from '../../store/petStore';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { WeightChart } from '../../components/pets/WeightChart';

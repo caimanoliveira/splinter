@@ -14,7 +14,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 
-import { useUser } from '@clerk/clerk-expo';
+import { useUser } from '@clerk/expo';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { usePetStore } from '../../store/petStore';

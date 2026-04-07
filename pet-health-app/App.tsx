@@ -2,7 +2,7 @@ import 'react-native-url-polyfill/auto';
 import React, { useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { ClerkProvider } from '@clerk/clerk-expo';
+import { ClerkProvider } from '@clerk/expo';
 import * as Notifications from 'expo-notifications';
 
 import { RootNavigator } from './src/navigation/RootNavigator';

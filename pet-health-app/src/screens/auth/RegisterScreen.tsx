@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { useSignUp } from '@clerk/clerk-expo';
+import { useSignUp } from '@clerk/expo';
 
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';

@@ -12,7 +12,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.600.0",
     "@aws-sdk/s3-request-presigner": "^3.600.0",
-    "@clerk/clerk-expo": "^1.2.0",
+    "@clerk/expo": "^2.0.0",
     "@expo/vector-icons": "^14.0.0",
     "@neondatabase/serverless": "^0.9.4",
     "@react-navigation/bottom-tabs": "^6.5.20",

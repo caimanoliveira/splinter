@@ -11,7 +11,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Calendar, DateData } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons';
 
-import { useUser } from '@clerk/clerk-expo';
+import { useUser } from '@clerk/expo';
 import { useVetStore } from '../../store/vetStore';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { EmptyState } from '../../components/common/EmptyState';

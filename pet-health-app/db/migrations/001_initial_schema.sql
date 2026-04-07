@@ -51,8 +51,11 @@ CREATE TABLE IF NOT EXISTS public.weight_logs (
 -- ============================================================
 -- TABLE: health_records
 -- ============================================================
-CREATE TYPE IF NOT EXISTS public.health_record_type AS ENUM
-  ('vaccine', 'consultation', 'exam', 'surgery', 'other');
+DO $$ BEGIN
+  CREATE TYPE public.health_record_type AS ENUM
+    ('vaccine', 'consultation', 'exam', 'surgery', 'other');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.health_records (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -87,8 +90,11 @@ CREATE TABLE IF NOT EXISTS public.vets (
 -- ============================================================
 -- TABLE: appointments
 -- ============================================================
-CREATE TYPE IF NOT EXISTS public.appointment_status AS ENUM
-  ('scheduled', 'completed', 'cancelled');
+DO $$ BEGIN
+  CREATE TYPE public.appointment_status AS ENUM
+    ('scheduled', 'completed', 'cancelled');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.appointments (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -107,8 +113,11 @@ CREATE TABLE IF NOT EXISTS public.appointments (
 -- ============================================================
 -- TABLE: reminders
 -- ============================================================
-CREATE TYPE IF NOT EXISTS public.reminder_type AS ENUM
-  ('vaccine', 'consultation', 'medication', 'exam', 'other');
+DO $$ BEGIN
+  CREATE TYPE public.reminder_type AS ENUM
+    ('vaccine', 'consultation', 'medication', 'exam', 'other');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.reminders (
   id                    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

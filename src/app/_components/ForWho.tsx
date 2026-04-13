@@ -36,6 +36,9 @@ export function ForWho() {
           <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0f172a] mb-4">
             Isso foi feito pra você se…
           </h2>
+          <p className="text-[#64748b] max-w-lg mx-auto">
+            Não importa o cargo. Importa o momento — e se você se reconhece aqui.
+          </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {situations.map(({ title, desc }) => (

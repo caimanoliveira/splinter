@@ -6,11 +6,11 @@ const SITE_URL = "https://mentoria.caimanoliveira.com";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Mentoria de Carreira & Decisão | Caiman Oliveira — Senior PM Amazon",
-    template: "%s | Mentoria de Carreira & Decisão",
+    default: "Mentoria Carreira & Decisão | Caiman Oliveira — Senior PM Amazon",
+    template: "%s | Mentoria Carreira & Decisão",
   },
   description:
-    "Mentoria de carreira para PMs, designers, engenheiros e analistas sêniors em tech. Decision Canvas — metodologia estruturada para decisões complexas de carreira. Senior PM na Amazon • Formado pela USP • +50 profissionais mentorados. Primeira sessão gratuita.",
+    "Você não está travado por falta de competência — está travado por excesso de caminhos sem decisão. Mentoria de carreira com método (Decision Canvas) para PMs, designers, engenheiros e analistas sêniors. Senior PM Amazon • USP • +50 mentorados. Primeira sessão gratuita.",
   keywords: [
     "mentoria de carreira",
     "mentoria para product manager",
@@ -34,9 +34,9 @@ export const metadata: Metadata = {
     locale: "pt_BR",
     url: SITE_URL,
     siteName: "Mentoria de Carreira & Decisão — Caiman Oliveira",
-    title: "Profissionais sêniors em tech não travam por falta de competência. Travam por falta de clareza.",
+    title: "Você não está travado por falta de competência. Está travado por excesso de caminhos sem decisão.",
     description:
-      "Senior PM na Amazon. Metodologia Decision Canvas para decisões de carreira. Mentoria para PMs, designers, engenheiros e analistas em tech. +50 profissionais mentorados. Primeira sessão gratuita.",
+      "Mentoria Carreira & Decisão com método (Decision Canvas) para profissionais sêniors de tech. Não é sobre motivação. É sobre decisão. Senior PM Amazon • +50 mentorados. Primeira sessão gratuita.",
   },
   twitter: {
     card: "summary_large_image",
@@ -65,7 +65,7 @@ const jsonLd = {
       worksFor: { "@type": "Organization", name: "Amazon" },
       alumniOf: { "@type": "Organization", name: "Universidade de São Paulo (USP)" },
       description:
-        "Senior Product Manager na Amazon. Formado em Administração pela USP. Mentor de carreira especializado no método Decision Canvas para profissionais sêniors de tech em momentos de decisão estratégica.",
+        "Senior Product Manager na Amazon, formado em Administração pela USP. Mentor de carreira especializado no Decision Canvas — metodologia proprietária para decisões complexas de carreira. Ajuda profissionais de tech a decidir com método, não no impulso.",
       knowsAbout: [
         "Product Management",
         "Career Mentorship",
@@ -89,7 +89,7 @@ const jsonLd = {
       name: "Mentoria de Carreira & Decisão",
       provider: { "@id": `${SITE_URL}/#mentor` },
       description:
-        "Mentoria individual e em grupo para profissionais sêniors de tech (produto, design, engenharia, dados) em momentos de decisão estratégica de carreira. Usando o Decision Canvas — metodologia proprietária de 7 dimensões para estruturar decisões complexas.",
+        "Mentoria de carreira decision-first para profissionais sêniors de tech. Primeiro você decide o rumo — depois CV, LinkedIn e Gupy são alinhados a essa decisão. Usando o Decision Canvas, metodologia proprietária de 7 dimensões para estruturar decisões complexas de carreira.",
       serviceType: "Career Mentoring",
       areaServed: [
         { "@type": "Country", name: "Brazil" },
@@ -99,10 +99,10 @@ const jsonLd = {
       offers: [
         {
           "@type": "Offer",
-          name: "Sessão Única — Decisão",
+          name: "Check-up de Decisão de Carreira (Sessão Única)",
           price: "600",
           priceCurrency: "BRL",
-          description: "1 sessão de 90 minutos com foco em 1 decisão real usando o Decision Canvas. Entregável concreto ao final.",
+          description: "1 sessão de 90 minutos. Decision Canvas aplicado à sua situação, mapa de caminhos possíveis, identificação da decisão real e próximo passo concreto.",
         },
         {
           "@type": "Offer",
@@ -128,7 +128,7 @@ const jsonLd = {
           name: "O que é o Decision Canvas?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "O Decision Canvas é uma metodologia proprietária de 7 dimensões desenvolvida por Caiman Oliveira para estruturar decisões complexas de carreira: contexto da decisão, critérios explícitos, restrições reais, variáveis invisíveis, padrões de valor, espaço de possibilidades e cenários/trade-offs. Não dá a resposta certa — garante que você está fazendo as perguntas certas.",
+            text: "O Decision Canvas é uma metodologia proprietária de 7 dimensões desenvolvida por Caiman Oliveira para estruturar decisões complexas de carreira: (1) contexto da decisão, (2) critérios explícitos, (3) restrições reais, (4) variáveis invisíveis, (5) padrões de valor, (6) espaço de possibilidades e (7) cenários/trade-offs. Tira a decisão da cabeça e coloca num modelo visual com critérios e trade-offs. Não dá a resposta certa — garante que você está fazendo as perguntas certas.",
           },
         },
         {

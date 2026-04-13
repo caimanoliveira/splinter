@@ -12,21 +12,20 @@ export function Footer() {
         aria-label="Chamada para ação final"
       >
         <div className="max-w-xl mx-auto flex flex-col items-center text-center gap-6">
-          <p className="text-[#1E88E5] text-xs font-semibold tracking-widest uppercase">
+          <p className="text-[#F97316] text-xs font-semibold tracking-widest uppercase">
             Próximo passo
           </p>
           <h2 className="text-3xl sm:text-4xl font-extrabold leading-tight">
             Se fizer sentido pro seu momento, o próximo passo está aqui.
           </h2>
           <p className="text-[#94a3b8] leading-relaxed">
-            Se você está diante de uma decisão importante de carreira e quer clareza antes de agir,
-            começa pelo formulário. Eu leio tudo.
+            Não vendo o que você não precisa. Se não for a hora, eu digo.
           </p>
           <a
             href={WA_LINK}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 bg-[#1E88E5] hover:bg-[#1565C0] text-white font-bold px-10 py-4 rounded-full transition-colors w-full max-w-xs"
+            className="flex items-center justify-center bg-[#F97316] hover:bg-[#EA6B00] text-white font-bold px-10 py-4 rounded-full transition-colors w-full max-w-sm"
           >
             Preencher formulário de alinhamento →
           </a>
@@ -71,18 +70,10 @@ export function Footer() {
             </div>
           </div>
           <nav className="flex gap-5 text-sm text-[#64748b]" aria-label="Links do rodapé">
-            <a href={WA_LINK} target="_blank" rel="noopener noreferrer" className="hover:text-[#0f172a] transition-colors">
-              WhatsApp
-            </a>
-            <a href={LINKEDIN} target="_blank" rel="noopener noreferrer" className="hover:text-[#0f172a] transition-colors">
-              LinkedIn
-            </a>
-            <a href={INSTAGRAM} target="_blank" rel="noopener noreferrer" className="hover:text-[#0f172a] transition-colors">
-              Instagram
-            </a>
-            <a href="mailto:mentoriacarreiraedecisao@gmail.com" className="hover:text-[#0f172a] transition-colors">
-              Email
-            </a>
+            <a href={WA_LINK} target="_blank" rel="noopener noreferrer" className="hover:text-[#0f172a] transition-colors">WhatsApp</a>
+            <a href={LINKEDIN} target="_blank" rel="noopener noreferrer" className="hover:text-[#0f172a] transition-colors">LinkedIn</a>
+            <a href={INSTAGRAM} target="_blank" rel="noopener noreferrer" className="hover:text-[#0f172a] transition-colors">Instagram</a>
+            <a href="mailto:mentoriacarreiraedecisao@gmail.com" className="hover:text-[#0f172a] transition-colors">Email</a>
           </nav>
           <p className="text-[#94a3b8] text-xs">
             &copy; {new Date().getFullYear()} Caiman Oliveira. Todos os direitos reservados.

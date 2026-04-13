@@ -1,18 +1,18 @@
 const forYou = [
-  "Profissional pleno a sênior de tech com a carreira travada ou decisão difícil na frente",
-  "Em transição estratégica — área, empresa, mercado",
-  "Precisa decidir: ficar ou sair, aceitar ou recusar, reposicionar-se",
-  "Quer ir para produto e não sabe como contar sua história",
-  "Tem uma entrevista importante e quer chegar com narrativa e cases sólidos",
-  "É profissional de tech (produto, design, engenharia, dados) navegando uma decisão com muitas variáveis",
+  "Está entre caminhos e fica voltando para a mesma questão sem resolver",
+  "Quer decidir com método — não no impulso, não no medo",
+  "Está disposto(a) a executar o que decidir",
+  "Profissional de tech (produto, design, engenharia, dados) com 5+ anos de experiência",
+  "Quer aprender um framework que pode reutilizar em futuras decisões",
+  "Entende que CV, LinkedIn e Gupy vêm depois — não antes — da decisão",
 ];
 
 const notForYou = [
-  "Quer resposta pronta — eu não dou",
-  "Busca validação constante para se sentir seguro",
+  "Quer que eu decida por você — eu não decido",
+  "Busca motivação ou validação constante para se sentir seguro(a)",
   "Não pretende executar o que decidir",
-  "Quer fórmulas, atalhos ou promessas mágicas",
   "Procura suporte emocional prolongado ou terapia",
+  "Quer uma fórmula pronta: \"me diz o que fazer\"",
 ];
 
 export function Qualification() {

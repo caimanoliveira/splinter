@@ -2,13 +2,17 @@ export function Problem() {
   return (
     <section className="bg-[#0f172a] text-white px-4 py-20" aria-label="Por que profissionais qualificados travam nas decisões de carreira">
       <div className="max-w-2xl mx-auto">
-        <p className="text-[#1E88E5] text-xs font-semibold tracking-widest uppercase mb-4">
+        <p className="text-[#F97316] text-xs font-semibold tracking-widest uppercase mb-4">
           O problema real
         </p>
         <h2 className="text-3xl sm:text-4xl font-extrabold mb-8 leading-tight">
           Por que profissionais qualificados travam nas decisões de carreira
         </h2>
         <div className="flex flex-col gap-5 text-[#94a3b8] text-lg leading-relaxed">
+          <p className="text-white font-medium text-xl">
+            Carreira não é destino. É uma sequência de escolhas — e a maioria das pessoas nunca
+            aprendeu a escolher.
+          </p>
           <p>
             Quando você está na frente de uma decisão — fica ou sai, aceita ou recusa, muda de área
             — o que você analisa? Salário. Título. Nome da empresa.
@@ -23,9 +27,13 @@ export function Problem() {
             2 anos. A qualidade do seu gestor direto. A cultura de decisão da empresa. O custo
             emocional da escolha no contexto da sua vida agora.
           </p>
-          <p className="text-white font-medium">
+          <p>
             Essas variáveis são quase sempre ignoradas. Porque são difíceis de quantificar.
             E porque ninguém te ensina a pesar elas.
+          </p>
+          <p className="text-white font-medium border-l-2 border-[#F97316] pl-4">
+            Se você não sabe o que quer, qualquer vaga parece certa — até você entrar nela.
+            O problema raramente é o mercado. É a ausência de um método para decidir.
           </p>
         </div>
       </div>

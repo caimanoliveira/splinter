@@ -17,31 +17,48 @@ export function DecisionCanvas() {
             Metodologia
           </p>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0f172a] mb-4">
-            O Decision Canvas
+            Decision Canvas: coloque sua carreira no papel
           </h2>
           <p className="text-[#64748b] leading-relaxed max-w-xl mx-auto">
-            Metodologia estruturada para decisões de carreira complexas. Desenvolvido a partir da
-            experiência de tomada de decisão na Amazon e aplicado em dezenas de mentorias com
-            profissionais de tech.{" "}
-            <strong className="text-[#0f172a]">
-              Não dá a resposta certa. Garante que você está fazendo as perguntas certas.
-            </strong>
+            Tirar a decisão da sua cabeça e colocar em um modelo visual — com critérios, trade-offs
+            e cenários — é o que transforma indecisão em clareza.
           </p>
         </div>
+
+        {/* Visual grid canvas */}
         <div className="bg-[#0f172a] rounded-2xl p-6 sm:p-8 border border-[#1e293b]">
           <p className="text-[#1E88E5] text-xs font-semibold tracking-widest uppercase mb-6">
-            7 dimensões
+            7 dimensões · Decision Canvas
           </p>
-          <div className="flex flex-col divide-y divide-[#1e293b]">
-            {dimensions.map(({ n, label, text }) => (
-              <div key={n} className="py-4 first:pt-0 last:pb-0 flex items-start gap-4">
-                <span className="text-[#1E88E5] font-bold text-sm shrink-0 w-7 mt-0.5">{n}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-[#1e293b] rounded-xl overflow-hidden">
+            {dimensions.map(({ n, label, text }, i) => (
+              <div
+                key={n}
+                className={`bg-[#0f172a] p-5 flex items-start gap-4 ${
+                  i === dimensions.length - 1 && dimensions.length % 2 !== 0
+                    ? "sm:col-span-2"
+                    : ""
+                }`}
+              >
+                <span className="text-[#F97316] font-extrabold text-2xl leading-none shrink-0 w-10">
+                  {n}
+                </span>
                 <div>
-                  <p className="text-white font-semibold text-sm mb-0.5">{label}</p>
-                  <p className="text-[#64748b] text-sm">{text}</p>
+                  <p className="text-white font-bold text-sm mb-1">{label}</p>
+                  <p className="text-[#64748b] text-sm leading-relaxed">{text}</p>
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Closing statement */}
+          <div className="mt-6 pt-6 border-t border-[#1e293b] text-center">
+            <p className="text-[#94a3b8] text-base">
+              O Canvas não dá a resposta certa.{" "}
+              <strong className="text-white">
+                Garante que você está fazendo as perguntas certas.
+              </strong>
+            </p>
           </div>
         </div>
       </div>

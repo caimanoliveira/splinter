@@ -10,7 +10,7 @@ const scoreLabels: Record<number, string> = {
   3: "Abaixo da média",
   4: "Razoável",
   5: "Médio",
-  6: "Acima da médio",
+  6: "Acima da média",
   7: "Bom",
   8: "Muito bom",
   9: "Excelente",

@@ -9,10 +9,11 @@ export const metadata: Metadata = {
 };
 
 const navItems = [
-  { href: "/portal/dashboard", label: "Início", icon: "grid" },
-  { href: "/portal/materiais", label: "Materiais", icon: "book" },
-  { href: "/portal/tarefas", label: "Tarefas", icon: "check" },
-  { href: "/portal/avaliacao", label: "Avaliação", icon: "chart" },
+  { href: "/portal/dashboard", label: "Início",    icon: "grid"    },
+  { href: "/portal/canvas",    label: "Canvas",    icon: "canvas"  },
+  { href: "/portal/checkin",   label: "Check-in",  icon: "pulse"   },
+  { href: "/portal/tarefas",   label: "Tarefas",   icon: "check"   },
+  { href: "/portal/materiais", label: "Materiais", icon: "book"    },
 ];
 
 function NavIcon({ name }: { name: string }) {
@@ -28,6 +29,18 @@ function NavIcon({ name }: { name: string }) {
       return (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      );
+    case "canvas":
+      return (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6M5 8h14M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" />
+        </svg>
+      );
+    case "pulse":
+      return (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h3l3-9 3 18 3-9h3" />
         </svg>
       );
     case "check":

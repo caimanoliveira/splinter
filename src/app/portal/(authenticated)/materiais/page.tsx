@@ -1,6 +1,15 @@
 import { createClient } from "@/lib/supabase-server";
 import type { MentoradoMaterial, Material } from "@/types/portal";
 
+function safeUrl(url: string): string {
+  try {
+    const { protocol } = new URL(url);
+    return protocol === "https:" || protocol === "http:" ? url : "#";
+  } catch {
+    return "#";
+  }
+}
+
 const typeLabels: Record<string, string> = {
   pdf: "PDF",
   video: "Vídeo",
@@ -73,7 +82,7 @@ export default async function MateriaisPage() {
           {allMaterials.map(({ material, seen_at }) => (
             <a
               key={material.id}
-              href={material.url}
+              href={safeUrl(material.url)}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-white rounded-2xl border border-[#e2e8f0] shadow-sm p-5 flex gap-4 hover:border-[#1E88E5]/40 hover:shadow-md transition group"

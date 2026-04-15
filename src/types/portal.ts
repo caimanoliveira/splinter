@@ -75,3 +75,47 @@ export interface AvaliacaoCompetencia {
   assessed_at: string
   competencia?: Competencia
 }
+
+export type CanvasStatus = 'draft' | 'active' | 'archived'
+export type CheckinMood = 'energized' | 'neutral' | 'stuck' | 'anxious'
+
+export interface Canvas {
+  id: string
+  mentorado_id: string
+  version_number: number
+  title: string
+  context: string | null
+  criteria: string | null
+  constraints: string | null
+  invisible_vars: string | null
+  value_patterns: string | null
+  possibilities: string | null
+  scenarios: string | null
+  final_decision: string | null
+  status: CanvasStatus
+  created_at: string
+  updated_at: string
+}
+
+export interface Checkin {
+  id: string
+  mentorado_id: string
+  clarity_score: number
+  confidence_score: number
+  mood: CheckinMood
+  wins: string | null
+  blockers: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface Marco {
+  id: string
+  mentorado_id: string
+  title: string
+  description: string | null
+  order: number
+  is_achieved: boolean
+  achieved_at: string | null
+  created_at: string
+}

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawNext = searchParams.get("next") ?? "";
@@ -37,6 +37,73 @@ export default function LoginPage() {
   }
 
   return (
+    <div className="bg-white rounded-2xl p-7 shadow-xl">
+      <h1 className="text-[#0f172a] font-extrabold text-xl mb-1">Entrar no portal</h1>
+      <p className="text-[#64748b] text-sm mb-6">
+        Acesse com o email e senha enviados pelo mentor.
+      </p>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="email" className="text-[#0f172a] text-sm font-medium">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="seu@email.com"
+            className="border border-[#e2e8f0] rounded-xl px-4 py-2.5 text-sm text-[#0f172a] placeholder-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#1E88E5] focus:border-transparent transition"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="password" className="text-[#0f172a] text-sm font-medium">
+            Senha
+          </label>
+          <input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            className="border border-[#e2e8f0] rounded-xl px-4 py-2.5 text-sm text-[#0f172a] placeholder-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#1E88E5] focus:border-transparent transition"
+          />
+        </div>
+
+        {error && (
+          <p className="text-red-500 text-sm bg-red-50 px-3 py-2 rounded-lg">{error}</p>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-[#1E88E5] hover:bg-[#1565C0] disabled:opacity-60 text-white font-bold py-3 rounded-full transition-colors mt-1"
+        >
+          {loading ? "Entrando…" : "Entrar"}
+        </button>
+      </form>
+
+      <p className="text-[#94a3b8] text-xs text-center mt-5 leading-relaxed">
+        Problema com acesso?{" "}
+        <a
+          href="mailto:mentoriacarreiraedecisao@gmail.com"
+          className="text-[#1E88E5] hover:underline"
+        >
+          mentoriacarreiraedecisao@gmail.com
+        </a>
+      </p>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <div className="min-h-screen bg-[#0f172a] flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
@@ -52,69 +119,13 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-2xl p-7 shadow-xl">
-          <h1 className="text-[#0f172a] font-extrabold text-xl mb-1">Entrar no portal</h1>
-          <p className="text-[#64748b] text-sm mb-6">
-            Acesse com o email e senha enviados pelo mentor.
-          </p>
-
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="email" className="text-[#0f172a] text-sm font-medium">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
-                className="border border-[#e2e8f0] rounded-xl px-4 py-2.5 text-sm text-[#0f172a] placeholder-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#1E88E5] focus:border-transparent transition"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="password" className="text-[#0f172a] text-sm font-medium">
-                Senha
-              </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="border border-[#e2e8f0] rounded-xl px-4 py-2.5 text-sm text-[#0f172a] placeholder-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#1E88E5] focus:border-transparent transition"
-              />
-            </div>
-
-            {error && (
-              <p className="text-red-500 text-sm bg-red-50 px-3 py-2 rounded-lg">{error}</p>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-[#1E88E5] hover:bg-[#1565C0] disabled:opacity-60 text-white font-bold py-3 rounded-full transition-colors mt-1"
-            >
-              {loading ? "Entrando…" : "Entrar"}
-            </button>
-          </form>
-
-          <p className="text-[#94a3b8] text-xs text-center mt-5 leading-relaxed">
-            Problema com acesso?{" "}
-            <a
-              href="mailto:mentoriacarreiraedecisao@gmail.com"
-              className="text-[#1E88E5] hover:underline"
-            >
-              mentoriacarreiraedecisao@gmail.com
-            </a>
-          </p>
-        </div>
+        <Suspense fallback={
+          <div className="bg-white rounded-2xl p-7 shadow-xl text-center">
+            <p className="text-[#64748b] text-sm">Carregando…</p>
+          </div>
+        }>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
   );

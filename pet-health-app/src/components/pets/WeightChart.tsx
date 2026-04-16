@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
+import { S } from '../../lib/strings';
 import type { WeightLog } from '../../types';
 
 interface WeightChartProps {
@@ -13,7 +14,7 @@ export function WeightChart({ logs }: WeightChartProps) {
   if (logs.length === 0) {
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyText}>No weight data yet. Add your first entry!</Text>
+        <Text style={styles.emptyText}>{S.noWeightData}</Text>
       </View>
     );
   }
@@ -30,7 +31,7 @@ export function WeightChart({ logs }: WeightChartProps) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Weight History (kg)</Text>
+      <Text style={styles.title}>{S.weightHistoryTitle}</Text>
       <LineChart
         data={data}
         width={SCREEN_WIDTH - 64}

@@ -14,16 +14,17 @@ import { useUser } from '@clerk/expo';
 import { usePetStore } from '../../store/petStore';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { EmptyState } from '../../components/common/EmptyState';
+import { S } from '../../lib/strings';
 import type { PetsStackParamList, HealthRecord, HealthRecordType } from '../../types';
 
 type Props = NativeStackScreenProps<PetsStackParamList, 'HealthRecords'>;
 
 const TYPE_CONFIG: Record<HealthRecordType, { icon: React.ComponentProps<typeof Ionicons>['name']; color: string; label: string }> = {
-  vaccine: { icon: 'shield-checkmark', color: '#4CAF82', label: 'Vaccine' },
-  consultation: { icon: 'stethoscope', color: '#2196F3', label: 'Consultation' },
-  exam: { icon: 'document-text', color: '#FF9800', label: 'Exam' },
-  surgery: { icon: 'cut', color: '#F44336', label: 'Surgery' },
-  other: { icon: 'ellipsis-horizontal-circle', color: '#9E9E9E', label: 'Other' },
+  vaccine: { icon: 'shield-checkmark', color: '#4CAF82', label: S.typeVaccine },
+  consultation: { icon: 'stethoscope', color: '#2196F3', label: S.typeConsultation },
+  exam: { icon: 'document-text', color: '#FF9800', label: S.typeExam },
+  surgery: { icon: 'cut', color: '#F44336', label: S.typeSurgery },
+  other: { icon: 'ellipsis-horizontal-circle', color: '#9E9E9E', label: S.typeOther },
 };
 
 export function HealthRecordsScreen({ navigation, route }: Props) {
@@ -82,8 +83,8 @@ export function HealthRecordsScreen({ navigation, route }: Props) {
         ListEmptyComponent={
           <EmptyState
             icon="document-text-outline"
-            title="No records yet"
-            subtitle="Tap + to log a vaccine, consultation, or exam."
+            title={S.noRecords}
+            subtitle={S.noRecordsHint}
           />
         }
       />
@@ -101,7 +102,7 @@ export function HealthRecordsScreen({ navigation, route }: Props) {
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  return d.toLocaleDateString('pt-BR', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 const styles = StyleSheet.create({

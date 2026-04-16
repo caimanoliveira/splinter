@@ -15,6 +15,7 @@ import { useUser } from '@clerk/expo';
 import { usePetStore } from '../../store/petStore';
 import { Button } from '../../components/common/Button';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { S } from '../../lib/strings';
 import type { PetsStackParamList, HealthRecord } from '../../types';
 
 type Props = NativeStackScreenProps<PetsStackParamList, 'RecordDetail'>;
@@ -24,7 +25,6 @@ export function RecordDetailScreen({ navigation, route }: Props) {
   const { user } = useUser();
   const { healthRecords, deleteHealthRecord } = usePetStore();
 
-  // Find the record across all pet buckets
   const [record, setRecord] = useState<HealthRecord | null>(null);
 
   useEffect(() => {
@@ -40,19 +40,19 @@ export function RecordDetailScreen({ navigation, route }: Props) {
   async function handleDelete() {
     if (!record) return;
     Alert.alert(
-      'Delete Record',
-      'Are you sure you want to delete this health record?',
+      S.deleteRecord,
+      S.deleteRecordConfirm,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: S.cancel, style: 'cancel' },
         {
-          text: 'Delete',
+          text: S.delete,
           style: 'destructive',
           onPress: async () => {
             try {
               await deleteHealthRecord(record.id, record.pet_id, user?.id ?? '');
               navigation.goBack();
             } catch {
-              Alert.alert('Error', 'Could not delete record.');
+              Alert.alert(S.error, S.deleteRecordError);
             }
           },
         },
@@ -66,7 +66,6 @@ export function RecordDetailScreen({ navigation, route }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Type badge */}
       <View style={styles.typeBadge}>
         <Text style={styles.typeBadgeText}>{record.record_type.toUpperCase()}</Text>
       </View>
@@ -75,19 +74,19 @@ export function RecordDetailScreen({ navigation, route }: Props) {
       <Text style={styles.date}>{formatDate(record.record_date)}</Text>
 
       {record.veterinarian ? (
-        <InfoRow icon="person-circle-outline" label="Veterinarian" value={`Dr. ${record.veterinarian}`} />
+        <InfoRow icon="person-circle-outline" label={S.recordVet} value={`Dr. ${record.veterinarian}`} />
       ) : null}
 
       {record.description ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notes</Text>
+          <Text style={styles.sectionTitle}>{S.notes}</Text>
           <Text style={styles.description}>{record.description}</Text>
         </View>
       ) : null}
 
       {record.attachment_urls && record.attachment_urls.length > 0 ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Attachments ({record.attachment_urls.length})</Text>
+          <Text style={styles.sectionTitle}>{S.recordAttachments} ({record.attachment_urls.length})</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {record.attachment_urls.map((url, i) => (
               <Image key={i} source={{ uri: url }} style={styles.attachment} />
@@ -98,13 +97,13 @@ export function RecordDetailScreen({ navigation, route }: Props) {
 
       <View style={styles.actions}>
         <Button
-          title="Edit"
+          title={S.edit}
           variant="secondary"
           onPress={() => navigation.navigate('AddRecord', { petId: record.pet_id, recordId: record.id })}
           style={styles.halfBtn}
         />
         <Button
-          title="Delete"
+          title={S.delete}
           variant="danger"
           onPress={handleDelete}
           style={styles.halfBtn}
@@ -127,7 +126,7 @@ function InfoRow({ icon, label, value }: { icon: React.ComponentProps<typeof Ion
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  return new Date(iso).toLocaleDateString('pt-BR', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 const styles = StyleSheet.create({

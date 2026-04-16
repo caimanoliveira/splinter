@@ -12,6 +12,7 @@ import { useUser } from '@clerk/expo';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { useVetStore } from '../../store/vetStore';
+import { S } from '../../lib/strings';
 import type { VetsStackParamList } from '../../types';
 
 type Props = NativeStackScreenProps<VetsStackParamList, 'AddEditVet'>;
@@ -34,8 +35,8 @@ export function AddEditVetScreen({ navigation, route }: Props) {
 
   function validate() {
     const e: typeof errors = {};
-    if (!name.trim()) e.name = 'Name is required';
-    if (email && !/\S+@\S+\.\S+/.test(email)) e.email = 'Enter a valid email';
+    if (!name.trim()) e.name = S.vetNameRequired;
+    if (email && !/\S+@\S+\.\S+/.test(email)) e.email = S.vetEmailInvalid;
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -66,7 +67,7 @@ export function AddEditVetScreen({ navigation, route }: Props) {
         navigation.replace('VetDetail', { vetId: newVet.id });
       }
     } catch (err) {
-      Alert.alert('Error', (err as Error).message ?? 'Could not save vet.');
+      Alert.alert(S.error, (err as Error).message ?? S.vetSaveError);
     } finally {
       setSaving(false);
     }
@@ -78,21 +79,21 @@ export function AddEditVetScreen({ navigation, route }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Input label="Name *" value={name} onChangeText={setName} placeholder="Smith" error={errors.name} />
-        <Input label="Clinic" value={clinic} onChangeText={setClinic} placeholder="City Animal Hospital" />
-        <Input label="Phone" value={phone} onChangeText={setPhone} placeholder="+1 555 000 0000" keyboardType="phone-pad" />
-        <Input label="Email" value={email} onChangeText={setEmail} placeholder="dr.smith@clinic.com" keyboardType="email-address" autoCapitalize="none" error={errors.email} />
-        <Input label="Specialty" value={specialty} onChangeText={setSpecialty} placeholder="Small Animals" />
+        <Input label={S.vetName} value={name} onChangeText={setName} placeholder={S.vetNamePlaceholder} error={errors.name} />
+        <Input label={S.vetClinic} value={clinic} onChangeText={setClinic} placeholder={S.vetClinicPlaceholder} />
+        <Input label={S.vetPhone} value={phone} onChangeText={setPhone} placeholder={S.vetPhonePlaceholder} keyboardType="phone-pad" />
+        <Input label={S.vetEmail} value={email} onChangeText={setEmail} placeholder={S.vetEmailPlaceholder} keyboardType="email-address" autoCapitalize="none" error={errors.email} />
+        <Input label={S.vetSpecialty} value={specialty} onChangeText={setSpecialty} placeholder={S.vetSpecialtyPlaceholder} />
         <Input
-          label="Notes"
+          label={S.vetNotes}
           value={notes}
           onChangeText={setNotes}
-          placeholder="Any notes..."
+          placeholder={S.vetNotesPlaceholder}
           multiline
           numberOfLines={4}
           style={styles.textArea}
         />
-        <Button title={vetId ? 'Save Changes' : 'Add Vet'} onPress={handleSave} loading={saving} style={styles.saveBtn} />
+        <Button title={vetId ? S.saveChanges : S.addVet} onPress={handleSave} loading={saving} style={styles.saveBtn} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

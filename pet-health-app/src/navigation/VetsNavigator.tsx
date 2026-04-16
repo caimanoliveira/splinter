@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { VetRegistryScreen } from '../screens/vets/VetRegistryScreen';
 import { VetDetailScreen } from '../screens/vets/VetDetailScreen';
 import { AddEditVetScreen } from '../screens/vets/AddEditVetScreen';
+import { S } from '../lib/strings';
 import type { VetsStackParamList } from '../types';
 
 const Stack = createNativeStackNavigator<VetsStackParamList>();
@@ -17,10 +18,10 @@ export function VetsNavigator() {
         headerTitleStyle: { fontWeight: '700' },
       }}
     >
-      <Stack.Screen name="VetRegistry" component={VetRegistryScreen} options={{ title: 'Veterinarians' }} />
-      <Stack.Screen name="VetDetail" component={VetDetailScreen} options={{ title: 'Vet Profile' }} />
+      <Stack.Screen name="VetRegistry" component={VetRegistryScreen} options={{ title: S.vets }} />
+      <Stack.Screen name="VetDetail" component={VetDetailScreen} options={{ title: S.vetProfile }} />
       <Stack.Screen name="AddEditVet" component={AddEditVetScreen} options={({ route }) => ({
-        title: route.params?.vetId ? 'Edit Vet' : 'Add Vet',
+        title: route.params?.vetId ? S.editVet : S.addVet,
       })} />
     </Stack.Navigator>
   );

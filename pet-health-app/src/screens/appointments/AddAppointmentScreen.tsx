@@ -16,11 +16,18 @@ import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { useVetStore } from '../../store/vetStore';
 import { usePetStore } from '../../store/petStore';
+import { S } from '../../lib/strings';
 import type { AppointmentsStackParamList, AppointmentStatus } from '../../types';
 
 type Props = NativeStackScreenProps<AppointmentsStackParamList, 'AddAppointment'>;
 
 const STATUS_OPTIONS: AppointmentStatus[] = ['scheduled', 'completed', 'cancelled'];
+
+const STATUS_LABELS: Record<AppointmentStatus, string> = {
+  scheduled: S.statusScheduled,
+  completed: S.statusCompleted,
+  cancelled: S.statusCancelled,
+};
 
 export function AddAppointmentScreen({ navigation, route }: Props) {
   const { appointmentId } = route.params ?? {};
@@ -52,12 +59,12 @@ export function AddAppointmentScreen({ navigation, route }: Props) {
 
   function validate() {
     const e: typeof errors = {};
-    if (!title.trim()) e.title = 'Title is required';
-    if (!selectedPetId) e.petId = 'Select a pet';
-    if (!appointmentAt) e.appointmentAt = 'Date & time is required';
+    if (!title.trim()) e.title = S.appointmentTitleRequired;
+    if (!selectedPetId) e.petId = S.appointmentPetRequired;
+    if (!appointmentAt) e.appointmentAt = S.appointmentDateRequired;
     else {
       const d = new Date(appointmentAt.replace(' ', 'T'));
-      if (isNaN(d.getTime())) e.appointmentAt = 'Use YYYY-MM-DD HH:MM format';
+      if (isNaN(d.getTime())) e.appointmentAt = 'Use o formato YYYY-MM-DD HH:MM';
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -92,7 +99,7 @@ export function AddAppointmentScreen({ navigation, route }: Props) {
       }
       navigation.goBack();
     } catch (err) {
-      Alert.alert('Error', (err as Error).message ?? 'Could not save appointment.');
+      Alert.alert(S.error, (err as Error).message ?? S.appointmentSaveError);
     } finally {
       setSaving(false);
     }
@@ -104,10 +111,9 @@ export function AddAppointmentScreen({ navigation, route }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Input label="Title *" value={title} onChangeText={setTitle} placeholder="Annual check-up" error={errors.title} />
+        <Input label={S.appointmentTitle} value={title} onChangeText={setTitle} placeholder={S.appointmentTitlePlaceholder} error={errors.title} />
 
-        {/* Pet selector */}
-        <Text style={styles.label}>Pet *</Text>
+        <Text style={styles.label}>{S.appointmentPet}</Text>
         {errors.petId ? <Text style={styles.errorText}>{errors.petId}</Text> : null}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
           {pets.map((p) => (
@@ -121,14 +127,13 @@ export function AddAppointmentScreen({ navigation, route }: Props) {
           ))}
         </ScrollView>
 
-        {/* Vet selector */}
-        <Text style={styles.label}>Veterinarian (optional)</Text>
+        <Text style={styles.label}>{S.appointmentVet}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
           <TouchableOpacity
             style={[styles.chip, selectedVetId === '' && styles.chipActive]}
             onPress={() => setSelectedVetId('')}
           >
-            <Text style={[styles.chipText, selectedVetId === '' && styles.chipTextActive]}>None</Text>
+            <Text style={[styles.chipText, selectedVetId === '' && styles.chipTextActive]}>{S.appointmentVetNone}</Text>
           </TouchableOpacity>
           {vets.map((v) => (
             <TouchableOpacity
@@ -144,7 +149,7 @@ export function AddAppointmentScreen({ navigation, route }: Props) {
         </ScrollView>
 
         <Input
-          label="Date & Time * (YYYY-MM-DD HH:MM)"
+          label={S.appointmentDateTime}
           value={appointmentAt}
           onChangeText={setAppointmentAt}
           placeholder="2024-09-20 10:30"
@@ -152,22 +157,21 @@ export function AddAppointmentScreen({ navigation, route }: Props) {
           error={errors.appointmentAt}
         />
 
-        <Input label="Location" value={location} onChangeText={setLocation} placeholder="City Vet Clinic, Room 3" />
+        <Input label={S.appointmentLocation} value={location} onChangeText={setLocation} placeholder={S.appointmentLocationPlaceholder} />
 
         <Input
-          label="Notes"
+          label={S.notes}
           value={description}
           onChangeText={setDescription}
-          placeholder="Additional notes..."
+          placeholder={S.notesPlaceholder}
           multiline
           numberOfLines={3}
           style={styles.textArea}
         />
 
-        {/* Status (only when editing) */}
         {appointmentId ? (
           <>
-            <Text style={styles.label}>Status</Text>
+            <Text style={styles.label}>{S.appointmentStatus}</Text>
             <View style={styles.statusRow}>
               {STATUS_OPTIONS.map((s) => (
                 <TouchableOpacity
@@ -176,7 +180,7 @@ export function AddAppointmentScreen({ navigation, route }: Props) {
                   onPress={() => setStatus(s)}
                 >
                   <Text style={[styles.chipText, status === s && styles.chipTextActive]}>
-                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                    {STATUS_LABELS[s]}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -185,7 +189,7 @@ export function AddAppointmentScreen({ navigation, route }: Props) {
         ) : null}
 
         <Button
-          title={appointmentId ? 'Save Changes' : 'Schedule Appointment'}
+          title={appointmentId ? S.saveChanges : S.scheduleAppointment}
           onPress={handleSave}
           loading={saving}
           style={styles.saveBtn}

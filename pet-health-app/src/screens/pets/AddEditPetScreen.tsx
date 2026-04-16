@@ -19,11 +19,22 @@ import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { usePetStore } from '../../store/petStore';
 import { uploadFile } from '../../lib/storage';
+import { S } from '../../lib/strings';
 import type { PetsStackParamList, Species } from '../../types';
 
 type Props = NativeStackScreenProps<PetsStackParamList, 'AddEditPet'>;
 
 const SPECIES_OPTIONS: Species[] = ['dog', 'cat', 'bird', 'rabbit', 'fish', 'reptile', 'other'];
+
+const SPECIES_LABELS: Record<Species, string> = {
+  dog: S.speciesDog,
+  cat: S.speciesCat,
+  bird: S.speciesBird,
+  rabbit: S.speciesRabbit,
+  fish: S.speciesFish,
+  reptile: S.speciesReptile,
+  other: S.speciesOther,
+};
 
 export function AddEditPetScreen({ navigation, route }: Props) {
   const { petId } = route.params ?? {};
@@ -49,9 +60,9 @@ export function AddEditPetScreen({ navigation, route }: Props) {
 
   function validate(): boolean {
     const e: typeof errors = {};
-    if (!name.trim()) e.name = 'Name is required';
+    if (!name.trim()) e.name = S.petNameRequired;
     if (birthdate && !/^\d{4}-\d{2}-\d{2}$/.test(birthdate)) {
-      e.birthdate = 'Use YYYY-MM-DD format';
+      e.birthdate = 'Use o formato YYYY-MM-DD';
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -77,7 +88,6 @@ export function AddEditPetScreen({ navigation, route }: Props) {
     try {
       let photoUrl = existing?.photo_url ?? null;
 
-      // Upload new photo if local URI
       if (photoUri && !photoUri.startsWith('https://')) {
         setUploading(true);
         photoUrl = await uploadFile({
@@ -110,7 +120,7 @@ export function AddEditPetScreen({ navigation, route }: Props) {
 
       navigation.goBack();
     } catch (err) {
-      Alert.alert('Error', (err as Error).message ?? 'Could not save pet.');
+      Alert.alert(S.error, (err as Error).message ?? S.petSaveError);
     } finally {
       setSaving(false);
       setUploading(false);
@@ -123,28 +133,26 @@ export function AddEditPetScreen({ navigation, route }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {/* Photo picker */}
         <TouchableOpacity style={styles.photoPicker} onPress={pickPhoto}>
           {photoUri ? (
             <Image source={{ uri: photoUri }} style={styles.photoPreview} />
           ) : (
             <View style={styles.photoPlaceholder}>
               <Ionicons name="camera-outline" size={32} color="#4CAF82" />
-              <Text style={styles.photoHint}>Add photo</Text>
+              <Text style={styles.photoHint}>{photoUri ? S.petPhotoChange : S.petPhoto}</Text>
             </View>
           )}
         </TouchableOpacity>
 
         <Input
-          label="Name *"
+          label={S.petName}
           value={name}
           onChangeText={setName}
-          placeholder="Buddy"
+          placeholder={S.petNamePlaceholder}
           error={errors.name}
         />
 
-        {/* Species selector */}
-        <Text style={styles.label}>Species *</Text>
+        <Text style={styles.label}>{S.petSpecies}</Text>
         <View style={styles.speciesRow}>
           {SPECIES_OPTIONS.map((s) => (
             <TouchableOpacity
@@ -153,21 +161,21 @@ export function AddEditPetScreen({ navigation, route }: Props) {
               onPress={() => setSpecies(s)}
             >
               <Text style={[styles.speciesChipText, species === s && styles.speciesChipTextActive]}>
-                {s.charAt(0).toUpperCase() + s.slice(1)}
+                {SPECIES_LABELS[s]}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
         <Input
-          label="Breed"
+          label={S.petBreed}
           value={breed}
           onChangeText={setBreed}
-          placeholder="Golden Retriever"
+          placeholder={S.petBreedPlaceholder}
         />
 
         <Input
-          label="Birthdate (YYYY-MM-DD)"
+          label={S.petBirthdate}
           value={birthdate}
           onChangeText={setBirthdate}
           placeholder="2021-03-15"
@@ -176,7 +184,7 @@ export function AddEditPetScreen({ navigation, route }: Props) {
         />
 
         <Button
-          title={petId ? 'Save Changes' : 'Add Pet'}
+          title={petId ? S.saveChanges : S.addPet}
           onPress={handleSave}
           loading={saving || uploading}
           style={styles.saveBtn}

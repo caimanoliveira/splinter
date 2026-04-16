@@ -16,6 +16,7 @@ import { usePetStore } from '../../store/petStore';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { WeightChart } from '../../components/pets/WeightChart';
 import { Button } from '../../components/common/Button';
+import { S } from '../../lib/strings';
 import type { PetsStackParamList } from '../../types';
 
 type Props = NativeStackScreenProps<PetsStackParamList, 'PetDetail'>;
@@ -38,19 +39,19 @@ export function PetDetailScreen({ navigation, route }: Props) {
 
   const handleDelete = useCallback(() => {
     Alert.alert(
-      'Remove Pet',
-      `Are you sure you want to remove ${activePet?.name ?? 'this pet'}? This cannot be undone.`,
+      S.removePet,
+      S.removePetConfirm(activePet?.name ?? ''),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: S.cancel, style: 'cancel' },
         {
-          text: 'Remove',
+          text: S.remove,
           style: 'destructive',
           onPress: async () => {
             try {
               await deletePet(petId, userId);
               navigation.goBack();
             } catch {
-              Alert.alert('Error', 'Could not remove pet. Please try again.');
+              Alert.alert(S.error, S.removePetError);
             }
           },
         },
@@ -60,13 +61,13 @@ export function PetDetailScreen({ navigation, route }: Props) {
 
   const handleLogWeight = useCallback(() => {
     Alert.prompt(
-      'Log Weight',
-      'Enter current weight in kg:',
+      S.logWeight,
+      S.logWeightPrompt,
       async (value) => {
         if (!value) return;
         const num = parseFloat(value);
         if (isNaN(num) || num <= 0) {
-          Alert.alert('Invalid weight', 'Please enter a valid positive number.');
+          Alert.alert(S.logWeightInvalid, S.logWeightInvalidMessage);
           return;
         }
         try {
@@ -77,7 +78,7 @@ export function PetDetailScreen({ navigation, route }: Props) {
             notes: null,
           }, userId);
         } catch {
-          Alert.alert('Error', 'Could not save weight entry.');
+          Alert.alert(S.error, S.logWeightError);
         }
       },
       'plain-text',
@@ -92,14 +93,13 @@ export function PetDetailScreen({ navigation, route }: Props) {
   if (!activePet) {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>Pet not found.</Text>
+        <Text style={styles.errorText}>{S.petNotFound}</Text>
       </View>
     );
   }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Hero */}
       <View style={styles.hero}>
         {activePet.photo_url ? (
           <Image source={{ uri: activePet.photo_url }} style={styles.heroImage} />
@@ -114,55 +114,50 @@ export function PetDetailScreen({ navigation, route }: Props) {
         </Text>
       </View>
 
-      {/* Stats row */}
       <View style={styles.statsRow}>
         <StatCard
           icon="scale-outline"
-          label="Weight"
+          label={S.statWeight}
           value={latestWeight ? `${latestWeight.weight_kg} kg` : '—'}
         />
         <StatCard
           icon="calendar-outline"
-          label="Age"
+          label={S.statAge}
           value={activePet.birthdate ? calcAge(activePet.birthdate) : '—'}
         />
         <StatCard
           icon="medical-outline"
-          label="Species"
+          label={S.statSpecies}
           value={capitalize(activePet.species)}
         />
       </View>
 
-      {/* Weight chart */}
       <WeightChart logs={logs} />
 
-      {/* Weight log button */}
       <Button
-        title="Log Weight"
+        title={S.logWeight}
         onPress={handleLogWeight}
         variant="secondary"
         style={styles.actionBtn}
       />
 
-      {/* Health records */}
       <Button
-        title="View Health Records"
+        title={S.viewHealthRecords}
         onPress={() =>
           navigation.navigate('HealthRecords', { petId, petName: activePet.name })
         }
         style={styles.actionBtn}
       />
 
-      {/* Edit / Delete */}
       <View style={styles.row}>
         <Button
-          title="Edit"
+          title={S.edit}
           onPress={() => navigation.navigate('AddEditPet', { petId })}
           variant="secondary"
           style={styles.halfBtn}
         />
         <Button
-          title="Remove Pet"
+          title={S.removePet}
           onPress={handleDelete}
           variant="danger"
           style={styles.halfBtn}
@@ -188,10 +183,10 @@ function calcAge(birthdate: string): string {
   const years = now.getFullYear() - birth.getFullYear();
   const months = now.getMonth() - birth.getMonth() + (now.getDate() >= birth.getDate() ? 0 : -1);
   const totalMonths = years * 12 + months;
-  if (totalMonths < 12) return `${totalMonths}mo`;
+  if (totalMonths < 12) return S.ageShortMonths(totalMonths);
   const y = Math.floor(totalMonths / 12);
   const m = totalMonths % 12;
-  return `${y}yr${m > 0 ? ` ${m}mo` : ''}`;
+  return S.ageShortYearsMonths(y, m);
 }
 
 function capitalize(s: string) {

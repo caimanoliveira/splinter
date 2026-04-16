@@ -15,6 +15,7 @@ import { useSignIn } from '@clerk/expo';
 
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
+import { S } from '../../lib/strings';
 import type { AuthStackParamList } from '../../types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
@@ -28,9 +29,9 @@ export function LoginScreen({ navigation }: Props) {
 
   function validate(): boolean {
     const e: typeof errors = {};
-    if (!email.trim()) e.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(email)) e.email = 'Enter a valid email';
-    if (!password) e.password = 'Password is required';
+    if (!email.trim()) e.email = S.emailRequired;
+    else if (!/\S+@\S+\.\S+/.test(email)) e.email = S.emailInvalid;
+    if (!password) e.password = S.passwordRequired;
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -46,11 +47,11 @@ export function LoginScreen({ navigation }: Props) {
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
       } else {
-        Alert.alert('Sign In', 'Additional verification required. Please check your email.');
+        Alert.alert(S.signIn, S.signInVerificationRequired);
       }
     } catch (err: any) {
-      const msg = err?.errors?.[0]?.longMessage ?? err?.message ?? 'Check your credentials and try again.';
-      Alert.alert('Sign In Failed', msg);
+      const msg = err?.errors?.[0]?.longMessage ?? err?.message ?? S.signInVerificationRequired;
+      Alert.alert(S.signInFailed, msg);
     } finally {
       setLoading(false);
     }
@@ -66,18 +67,18 @@ export function LoginScreen({ navigation }: Props) {
           <View style={styles.logoCircle}>
             <Ionicons name="paw" size={48} color="#fff" />
           </View>
-          <Text style={styles.appName}>Pet Health</Text>
-          <Text style={styles.tagline}>Keep your pets healthy &amp; happy</Text>
+          <Text style={styles.appName}>{S.appName}</Text>
+          <Text style={styles.tagline}>{S.appTagline}</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.heading}>Sign in</Text>
+          <Text style={styles.heading}>{S.signInHeading}</Text>
 
           <Input
-            label="Email"
+            label={S.email}
             value={email}
             onChangeText={setEmail}
-            placeholder="you@example.com"
+            placeholder={S.emailPlaceholder}
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
@@ -85,22 +86,19 @@ export function LoginScreen({ navigation }: Props) {
           />
 
           <Input
-            label="Password"
+            label={S.password}
             value={password}
             onChangeText={setPassword}
-            placeholder="••••••••"
+            placeholder={S.passwordPlaceholder}
             secureToggle
             autoComplete="password"
             error={errors.password}
           />
 
-          <Button title="Sign In" onPress={handleLogin} loading={loading} style={styles.btn} />
+          <Button title={S.signInButton} onPress={handleLogin} loading={loading} style={styles.btn} />
 
           <TouchableOpacity onPress={() => navigation.navigate('Register')} style={styles.linkRow}>
-            <Text style={styles.linkText}>
-              Don't have an account?{' '}
-              <Text style={styles.link}>Create one</Text>
-            </Text>
+            <Text style={styles.linkText}>{S.noAccount}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -126,6 +124,5 @@ const styles = StyleSheet.create({
   heading: { fontSize: 22, fontWeight: '700', color: '#333', marginBottom: 20 },
   btn: { marginTop: 8 },
   linkRow: { marginTop: 20, alignItems: 'center' },
-  linkText: { fontSize: 14, color: '#666' },
-  link: { color: '#4CAF82', fontWeight: '700' },
+  linkText: { fontSize: 14, color: '#4CAF82', fontWeight: '700' },
 });

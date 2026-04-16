@@ -15,6 +15,7 @@ import { useAuth, useUser, useClerk } from '@clerk/expo';
 import { usePetStore } from '../../store/petStore';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { EmptyState } from '../../components/common/EmptyState';
+import { S } from '../../lib/strings';
 import type { PetsStackParamList, Pet } from '../../types';
 
 type Props = NativeStackScreenProps<PetsStackParamList, 'PetList'>;
@@ -73,16 +74,15 @@ export function PetListScreen({ navigation }: Props) {
   }
 
   if (loading && pets.length === 0) {
-    return <LoadingSpinner fullScreen message="Loading your pets..." />;
+    return <LoadingSpinner fullScreen message={S.loadingPets} />;
   }
 
   return (
     <View style={styles.container}>
-      {/* User greeting */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Hello, {user?.firstName ?? 'there'} 👋</Text>
-          <Text style={styles.subGreeting}>{pets.length} pet{pets.length !== 1 ? 's' : ''} registered</Text>
+          <Text style={styles.greeting}>{S.greeting(user?.firstName ?? '')}</Text>
+          <Text style={styles.subGreeting}>{S.petCount(pets.length)}</Text>
         </View>
         <TouchableOpacity onPress={() => signOut()} style={styles.signOutBtn}>
           <Ionicons name="log-out-outline" size={22} color="#F44336" />
@@ -98,13 +98,12 @@ export function PetListScreen({ navigation }: Props) {
         ListEmptyComponent={
           <EmptyState
             icon="paw-outline"
-            title="No pets yet"
-            subtitle="Tap + to add your first pet and start tracking their health."
+            title={S.noPets}
+            subtitle={S.noPetsHint}
           />
         }
       />
 
-      {/* FAB */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() => navigation.navigate('AddEditPet', {})}
@@ -123,10 +122,10 @@ function calcAge(birthdate: string): string {
   const months =
     now.getMonth() - birth.getMonth() + (now.getDate() >= birth.getDate() ? 0 : -1);
   const totalMonths = years * 12 + months;
-  if (totalMonths < 12) return `${totalMonths} month${totalMonths !== 1 ? 's' : ''} old`;
+  if (totalMonths < 12) return S.ageMonths(totalMonths);
   const y = Math.floor(totalMonths / 12);
   const m = totalMonths % 12;
-  return `${y} yr${y !== 1 ? 's' : ''}${m > 0 ? ` ${m} mo` : ''}`;
+  return S.ageYearsMonths(y, m);
 }
 
 const styles = StyleSheet.create({

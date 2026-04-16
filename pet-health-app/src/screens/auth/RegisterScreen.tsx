@@ -15,6 +15,7 @@ import { useSignUp } from '@clerk/expo';
 
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
+import { S } from '../../lib/strings';
 import type { AuthStackParamList } from '../../types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
@@ -36,12 +37,12 @@ export function RegisterScreen({ navigation }: Props) {
 
   function validate(): boolean {
     const e: typeof errors = {};
-    if (!firstName.trim()) e.firstName = 'First name is required';
-    if (!email.trim()) e.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(email)) e.email = 'Enter a valid email';
-    if (!password) e.password = 'Password is required';
-    else if (password.length < 8) e.password = 'Minimum 8 characters';
-    if (password !== confirm) e.confirm = 'Passwords do not match';
+    if (!firstName.trim()) e.firstName = S.firstNameRequired;
+    if (!email.trim()) e.email = S.emailRequired;
+    else if (!/\S+@\S+\.\S+/.test(email)) e.email = S.emailInvalid;
+    if (!password) e.password = S.passwordRequired;
+    else if (password.length < 8) e.password = S.passwordMinLength;
+    if (password !== confirm) e.confirm = S.passwordsNoMatch;
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -56,12 +57,11 @@ export function RegisterScreen({ navigation }: Props) {
         emailAddress: email.trim(),
         password,
       });
-      // Send email verification code
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setStep('verify');
     } catch (err: any) {
-      const msg = err?.errors?.[0]?.longMessage ?? err?.message ?? 'Registration failed.';
-      Alert.alert('Error', msg);
+      const msg = err?.errors?.[0]?.longMessage ?? err?.message ?? S.error;
+      Alert.alert(S.error, msg);
     } finally {
       setLoading(false);
     }
@@ -75,11 +75,11 @@ export function RegisterScreen({ navigation }: Props) {
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
       } else {
-        Alert.alert('Verification', 'Could not verify. Check the code and try again.');
+        Alert.alert(S.verifyEmail, S.verificationFailed);
       }
     } catch (err: any) {
-      const msg = err?.errors?.[0]?.longMessage ?? err?.message ?? 'Verification failed.';
-      Alert.alert('Error', msg);
+      const msg = err?.errors?.[0]?.longMessage ?? err?.message ?? S.verificationFailed;
+      Alert.alert(S.error, msg);
     } finally {
       setLoading(false);
     }
@@ -93,21 +93,21 @@ export function RegisterScreen({ navigation }: Props) {
             <View style={styles.logoCircle}>
               <Ionicons name="mail" size={40} color="#fff" />
             </View>
-            <Text style={styles.appName}>Verify Email</Text>
-            <Text style={styles.tagline}>Enter the code we sent to {email}</Text>
+            <Text style={styles.appName}>{S.verifyEmail}</Text>
+            <Text style={styles.tagline}>{S.verifyEmailTagline(email)}</Text>
           </View>
           <View style={styles.card}>
             <Input
-              label="Verification Code"
+              label={S.verificationCode}
               value={verificationCode}
               onChangeText={setVerificationCode}
-              placeholder="123456"
+              placeholder={S.verificationCodePlaceholder}
               keyboardType="numeric"
               autoComplete="one-time-code"
             />
-            <Button title="Verify" onPress={handleVerify} loading={loading} style={styles.btn} />
+            <Button title={S.verifyButton} onPress={handleVerify} loading={loading} style={styles.btn} />
             <TouchableOpacity onPress={() => setStep('form')} style={styles.linkRow}>
-              <Text style={styles.link}>← Back</Text>
+              <Text style={styles.link}>{S.back}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -122,35 +122,35 @@ export function RegisterScreen({ navigation }: Props) {
           <View style={styles.logoCircle}>
             <Ionicons name="paw" size={48} color="#fff" />
           </View>
-          <Text style={styles.appName}>Pet Health</Text>
+          <Text style={styles.appName}>{S.appName}</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.heading}>Create account</Text>
+          <Text style={styles.heading}>{S.createAccount}</Text>
 
           <View style={styles.nameRow}>
             <Input
-              label="First Name *"
+              label={S.firstName}
               value={firstName}
               onChangeText={setFirstName}
-              placeholder="Jane"
+              placeholder={S.firstNamePlaceholder}
               containerStyle={styles.halfInput}
               error={errors.firstName}
             />
             <Input
-              label="Last Name"
+              label={S.lastName}
               value={lastName}
               onChangeText={setLastName}
-              placeholder="Doe"
+              placeholder={S.lastNamePlaceholder}
               containerStyle={styles.halfInput}
             />
           </View>
 
           <Input
-            label="Email *"
+            label={S.email}
             value={email}
             onChangeText={setEmail}
-            placeholder="you@example.com"
+            placeholder={S.emailPlaceholder}
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
@@ -158,30 +158,27 @@ export function RegisterScreen({ navigation }: Props) {
           />
 
           <Input
-            label="Password *"
+            label={S.password}
             value={password}
             onChangeText={setPassword}
-            placeholder="At least 8 characters"
+            placeholder={S.passwordHint}
             secureToggle
             error={errors.password}
           />
 
           <Input
-            label="Confirm Password *"
+            label={S.confirmPassword}
             value={confirm}
             onChangeText={setConfirm}
-            placeholder="Repeat your password"
+            placeholder={S.confirmPasswordPlaceholder}
             secureToggle
             error={errors.confirm}
           />
 
-          <Button title="Create Account" onPress={handleRegister} loading={loading} style={styles.btn} />
+          <Button title={S.createAccount} onPress={handleRegister} loading={loading} style={styles.btn} />
 
           <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.linkRow}>
-            <Text style={styles.linkText}>
-              Already have an account?{' '}
-              <Text style={styles.link}>Sign in</Text>
-            </Text>
+            <Text style={styles.link}>{S.hasAccount}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -209,6 +206,5 @@ const styles = StyleSheet.create({
   halfInput: { flex: 1 },
   btn: { marginTop: 8 },
   linkRow: { marginTop: 20, alignItems: 'center' },
-  linkText: { fontSize: 14, color: '#666' },
-  link: { color: '#4CAF82', fontWeight: '700' },
+  link: { fontSize: 14, color: '#4CAF82', fontWeight: '700' },
 });

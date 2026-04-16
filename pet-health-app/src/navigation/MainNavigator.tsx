@@ -6,6 +6,7 @@ import { PetsNavigator } from './PetsNavigator';
 import { RemindersNavigator } from './RemindersNavigator';
 import { AppointmentsNavigator } from './AppointmentsNavigator';
 import { VetsNavigator } from './VetsNavigator';
+import { S } from '../lib/strings';
 import type { MainTabParamList } from '../types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -34,10 +35,10 @@ export function MainNavigator() {
         },
       })}
     >
-      <Tab.Screen name="Pets" component={PetsNavigator} />
-      <Tab.Screen name="Reminders" component={RemindersNavigator} />
-      <Tab.Screen name="Appointments" component={AppointmentsNavigator} />
-      <Tab.Screen name="Vets" component={VetsNavigator} />
+      <Tab.Screen name="Pets" component={PetsNavigator} options={{ title: S.tabPets }} />
+      <Tab.Screen name="Reminders" component={RemindersNavigator} options={{ title: S.tabReminders }} />
+      <Tab.Screen name="Appointments" component={AppointmentsNavigator} options={{ title: S.tabAppointments }} />
+      <Tab.Screen name="Vets" component={VetsNavigator} options={{ title: S.tabVets }} />
     </Tab.Navigator>
   );
 }

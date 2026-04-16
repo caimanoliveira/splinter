@@ -15,6 +15,7 @@ import { useUser } from '@clerk/expo';
 import { useReminderStore } from '../../store/reminderStore';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { EmptyState } from '../../components/common/EmptyState';
+import { S } from '../../lib/strings';
 import type { RemindersStackParamList, Reminder, ReminderType } from '../../types';
 
 type Props = NativeStackScreenProps<RemindersStackParamList, 'ReminderList'>;
@@ -43,15 +44,15 @@ export function RemindersScreen({ navigation }: Props) {
   const done = reminders.filter((r) => r.is_completed);
 
   function handleLongPress(item: Reminder) {
-    Alert.alert(item.title, 'What would you like to do?', [
-      { text: 'Mark done', onPress: () => markCompleted(item.id, userId) },
-      { text: 'Edit', onPress: () => navigation.navigate('AddReminder', { reminderId: item.id }) },
+    Alert.alert(item.title, S.reminderOptions, [
+      { text: S.reminderMarkDone, onPress: () => markCompleted(item.id, userId) },
+      { text: S.reminderEdit, onPress: () => navigation.navigate('AddReminder', { reminderId: item.id }) },
       {
-        text: 'Delete',
+        text: S.reminderDelete,
         style: 'destructive',
-        onPress: () => deleteReminder(item.id, userId).catch(() => Alert.alert('Error', 'Could not delete reminder.')),
+        onPress: () => deleteReminder(item.id, userId).catch(() => Alert.alert(S.error, S.reminderDeleteError)),
       },
-      { text: 'Cancel', style: 'cancel' },
+      { text: S.cancel, style: 'cancel' },
     ]);
   }
 
@@ -71,7 +72,7 @@ export function RemindersScreen({ navigation }: Props) {
         <View style={styles.info}>
           <Text style={[styles.title, item.is_completed && styles.titleDone]}>{item.title}</Text>
           <Text style={[styles.when, isOverdue && styles.whenOverdue]}>
-            {isOverdue ? '⚠ Overdue · ' : ''}{formatDateTime(item.remind_at)}
+            {isOverdue ? S.overdue : ''}{formatDateTime(item.remind_at)}
           </Text>
           {item.pet ? (
             <Text style={styles.petLabel}>{item.pet.name}</Text>
@@ -100,14 +101,14 @@ export function RemindersScreen({ navigation }: Props) {
         refreshControl={<RefreshControl refreshing={loading} onRefresh={handleRefresh} tintColor="#4CAF82" />}
         ListHeaderComponent={
           upcoming.length > 0 && done.length > 0 ? (
-            <Text style={styles.sectionHeader}>Upcoming ({upcoming.length})</Text>
+            <Text style={styles.sectionHeader}>{S.upcomingReminders(upcoming.length)}</Text>
           ) : null
         }
         ListEmptyComponent={
           <EmptyState
             icon="alarm-outline"
-            title="No reminders"
-            subtitle="Tap + to set a reminder for vaccines, medication, or check-ups."
+            title={S.noReminders}
+            subtitle={S.noRemindersHint}
           />
         }
         ItemSeparatorComponent={() => null}
@@ -126,7 +127,7 @@ export function RemindersScreen({ navigation }: Props) {
 
 function formatDateTime(iso: string) {
   const d = new Date(iso);
-  return d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString('pt-BR', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 const styles = StyleSheet.create({

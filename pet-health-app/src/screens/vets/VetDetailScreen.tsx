@@ -15,6 +15,7 @@ import { useUser } from '@clerk/expo';
 import { useVetStore } from '../../store/vetStore';
 import { Button } from '../../components/common/Button';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { S } from '../../lib/strings';
 import type { VetsStackParamList, Vet } from '../../types';
 
 type Props = NativeStackScreenProps<VetsStackParamList, 'VetDetail'>;
@@ -26,17 +27,17 @@ export function VetDetailScreen({ navigation, route }: Props) {
   const vet = vets.find((v) => v.id === vetId);
 
   async function handleDelete() {
-    Alert.alert('Remove Vet', `Remove Dr. ${vet?.name} from your registry?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(S.removeVet, S.removeVetConfirm(vet?.name ?? ''), [
+      { text: S.cancel, style: 'cancel' },
       {
-        text: 'Remove',
+        text: S.remove,
         style: 'destructive',
         onPress: async () => {
           try {
             await deleteVet(vetId, user?.id ?? '');
             navigation.goBack();
           } catch {
-            Alert.alert('Error', 'Could not remove vet.');
+            Alert.alert(S.error, S.removeVetError);
           }
         },
       },
@@ -49,7 +50,6 @@ export function VetDetailScreen({ navigation, route }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Hero */}
       <View style={styles.hero}>
         <View style={styles.heroAvatar}>
           <Ionicons name="person" size={52} color="#4CAF82" />
@@ -58,31 +58,30 @@ export function VetDetailScreen({ navigation, route }: Props) {
         {vet.specialty ? <Text style={styles.specialty}>{vet.specialty}</Text> : null}
       </View>
 
-      {/* Info cards */}
       <View style={styles.infoSection}>
-        {vet.clinic ? <InfoRow icon="business-outline" label="Clinic" value={vet.clinic} /> : null}
+        {vet.clinic ? <InfoRow icon="business-outline" label={S.vetClinicLabel} value={vet.clinic} /> : null}
         {vet.phone ? (
           <TouchableOpacity onPress={() => Linking.openURL(`tel:${vet.phone}`)}>
-            <InfoRow icon="call-outline" label="Phone" value={vet.phone ?? ''} isLink />
+            <InfoRow icon="call-outline" label={S.vetPhoneLabel} value={vet.phone ?? ''} isLink />
           </TouchableOpacity>
         ) : null}
         {vet.email ? (
           <TouchableOpacity onPress={() => Linking.openURL(`mailto:${vet.email}`)}>
-            <InfoRow icon="mail-outline" label="Email" value={vet.email ?? ''} isLink />
+            <InfoRow icon="mail-outline" label={S.vetEmailLabel} value={vet.email ?? ''} isLink />
           </TouchableOpacity>
         ) : null}
-        {vet.notes ? <InfoRow icon="document-text-outline" label="Notes" value={vet.notes} /> : null}
+        {vet.notes ? <InfoRow icon="document-text-outline" label={S.vetNotesLabel} value={vet.notes} /> : null}
       </View>
 
       <View style={styles.actions}>
         <Button
-          title="Edit"
+          title={S.edit}
           variant="secondary"
           onPress={() => navigation.navigate('AddEditVet', { vetId })}
           style={styles.halfBtn}
         />
         <Button
-          title="Remove"
+          title={S.remove}
           variant="danger"
           onPress={handleDelete}
           style={styles.halfBtn}

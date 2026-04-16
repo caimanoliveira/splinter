@@ -17,11 +17,20 @@ import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { useReminderStore } from '../../store/reminderStore';
 import { usePetStore } from '../../store/petStore';
+import { S } from '../../lib/strings';
 import type { RemindersStackParamList, ReminderType } from '../../types';
 
 type Props = NativeStackScreenProps<RemindersStackParamList, 'AddReminder'>;
 
 const REMINDER_TYPES: ReminderType[] = ['vaccine', 'consultation', 'medication', 'exam', 'other'];
+
+const REMINDER_TYPE_LABELS: Record<ReminderType, string> = {
+  vaccine: S.reminderTypeVaccine,
+  consultation: S.reminderTypeConsultation,
+  medication: S.reminderTypeMedication,
+  exam: S.reminderTypeExam,
+  other: S.reminderTypeOther,
+};
 
 export function AddReminderScreen({ navigation, route }: Props) {
   const { reminderId, petId: initialPetId } = route.params ?? {};
@@ -54,12 +63,12 @@ export function AddReminderScreen({ navigation, route }: Props) {
 
   function validate() {
     const e: typeof errors = {};
-    if (!title.trim()) e.title = 'Title is required';
-    if (!selectedPetId) e.petId = 'Please select a pet';
-    if (!remindAt) e.remindAt = 'Date & time is required';
+    if (!title.trim()) e.title = S.reminderTitleRequired;
+    if (!selectedPetId) e.petId = S.reminderPetRequired;
+    if (!remindAt) e.remindAt = S.reminderDateRequired;
     else {
       const d = new Date(remindAt.replace(' ', 'T'));
-      if (isNaN(d.getTime())) e.remindAt = 'Use YYYY-MM-DD HH:MM format';
+      if (isNaN(d.getTime())) e.remindAt = 'Use o formato YYYY-MM-DD HH:MM';
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -96,7 +105,7 @@ export function AddReminderScreen({ navigation, route }: Props) {
       }
       navigation.goBack();
     } catch (err) {
-      Alert.alert('Error', (err as Error).message ?? 'Could not save reminder.');
+      Alert.alert(S.error, (err as Error).message ?? S.reminderSaveError);
     } finally {
       setSaving(false);
     }
@@ -108,8 +117,7 @@ export function AddReminderScreen({ navigation, route }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {/* Type */}
-        <Text style={styles.label}>Type</Text>
+        <Text style={styles.label}>{S.reminderType}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
           {REMINDER_TYPES.map((t) => (
             <TouchableOpacity
@@ -118,16 +126,15 @@ export function AddReminderScreen({ navigation, route }: Props) {
               onPress={() => setReminderType(t)}
             >
               <Text style={[styles.chipText, reminderType === t && styles.chipTextActive]}>
-                {t.charAt(0).toUpperCase() + t.slice(1)}
+                {REMINDER_TYPE_LABELS[t]}
               </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        <Input label="Title *" value={title} onChangeText={setTitle} placeholder="Annual Rabies Vaccine" error={errors.title} />
+        <Input label={S.reminderTitle} value={title} onChangeText={setTitle} placeholder={S.reminderTitlePlaceholder} error={errors.title} />
 
-        {/* Pet selector */}
-        <Text style={styles.label}>Pet *</Text>
+        <Text style={styles.label}>{S.reminderPet}</Text>
         {errors.petId ? <Text style={styles.errorText}>{errors.petId}</Text> : null}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
           {pets.map((p) => (
@@ -144,7 +151,7 @@ export function AddReminderScreen({ navigation, route }: Props) {
         </ScrollView>
 
         <Input
-          label="Remind At * (YYYY-MM-DD HH:MM)"
+          label={S.reminderDateTime}
           value={remindAt}
           onChangeText={setRemindAt}
           placeholder="2024-09-15 09:00"
@@ -153,18 +160,17 @@ export function AddReminderScreen({ navigation, route }: Props) {
         />
 
         <Input
-          label="Notes"
+          label={S.notes}
           value={description}
           onChangeText={setDescription}
-          placeholder="Additional notes..."
+          placeholder={S.notesPlaceholder}
           multiline
           numberOfLines={3}
           style={styles.textArea}
         />
 
-        {/* Recurring toggle */}
         <View style={styles.switchRow}>
-          <Text style={styles.switchLabel}>Recurring reminder</Text>
+          <Text style={styles.switchLabel}>{S.reminderRecurring}</Text>
           <Switch
             value={isRecurring}
             onValueChange={setIsRecurring}
@@ -175,16 +181,16 @@ export function AddReminderScreen({ navigation, route }: Props) {
 
         {isRecurring ? (
           <Input
-            label="Repeat every (days)"
+            label={S.reminderRepeatDays}
             value={recurrenceDays}
             onChangeText={setRecurrenceDays}
-            placeholder="30"
+            placeholder={S.reminderRepeatDaysPlaceholder}
             keyboardType="numeric"
           />
         ) : null}
 
         <Button
-          title={reminderId ? 'Save Changes' : 'Set Reminder'}
+          title={reminderId ? S.saveChanges : S.setReminder}
           onPress={handleSave}
           loading={saving}
           style={styles.saveBtn}

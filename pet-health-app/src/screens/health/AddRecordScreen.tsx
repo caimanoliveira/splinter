@@ -18,11 +18,20 @@ import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { usePetStore } from '../../store/petStore';
 import { uploadFile } from '../../lib/storage';
+import { S } from '../../lib/strings';
 import type { PetsStackParamList, HealthRecordType } from '../../types';
 
 type Props = NativeStackScreenProps<PetsStackParamList, 'AddRecord'>;
 
 const RECORD_TYPES: HealthRecordType[] = ['vaccine', 'consultation', 'exam', 'surgery', 'other'];
+
+const RECORD_TYPE_LABELS: Record<HealthRecordType, string> = {
+  vaccine: S.typeVaccine,
+  consultation: S.typeConsultation,
+  exam: S.typeExam,
+  surgery: S.typeSurgery,
+  other: S.typeOther,
+};
 
 export function AddRecordScreen({ navigation, route }: Props) {
   const { petId, recordId } = route.params;
@@ -46,9 +55,9 @@ export function AddRecordScreen({ navigation, route }: Props) {
 
   function validate() {
     const e: typeof errors = {};
-    if (!title.trim()) e.title = 'Title is required';
-    if (!recordDate) e.recordDate = 'Date is required';
-    else if (!/^\d{4}-\d{2}-\d{2}$/.test(recordDate)) e.recordDate = 'Use YYYY-MM-DD format';
+    if (!title.trim()) e.title = S.recordTitleRequired;
+    if (!recordDate) e.recordDate = S.recordDateRequired;
+    else if (!/^\d{4}-\d{2}-\d{2}$/.test(recordDate)) e.recordDate = 'Use o formato YYYY-MM-DD';
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -69,7 +78,6 @@ export function AddRecordScreen({ navigation, route }: Props) {
     setSaving(true);
 
     try {
-      // Upload new attachments
       const uploadedUrls: string[] = [];
       for (const uri of attachmentUris) {
         const url = await uploadFile({ folder: 'record-attachments', userId: user.id, localUri: uri });
@@ -108,7 +116,7 @@ export function AddRecordScreen({ navigation, route }: Props) {
       }
       navigation.goBack();
     } catch (err) {
-      Alert.alert('Error', (err as Error).message ?? 'Could not save record.');
+      Alert.alert(S.error, (err as Error).message ?? S.recordSaveError);
     } finally {
       setSaving(false);
     }
@@ -120,8 +128,7 @@ export function AddRecordScreen({ navigation, route }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {/* Type selector */}
-        <Text style={styles.label}>Record Type</Text>
+        <Text style={styles.label}>{S.recordType}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.typeScroll}>
           {RECORD_TYPES.map((t) => (
             <TouchableOpacity
@@ -130,42 +137,41 @@ export function AddRecordScreen({ navigation, route }: Props) {
               onPress={() => setRecordType(t)}
             >
               <Text style={[styles.chipText, recordType === t && styles.chipTextActive]}>
-                {t.charAt(0).toUpperCase() + t.slice(1)}
+                {RECORD_TYPE_LABELS[t]}
               </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        <Input label="Title *" value={title} onChangeText={setTitle} placeholder="Annual vaccine" error={errors.title} />
+        <Input label={S.recordTitle} value={title} onChangeText={setTitle} placeholder={S.recordTitlePlaceholder} error={errors.title} />
         <Input
-          label="Date * (YYYY-MM-DD)"
+          label={S.recordDate}
           value={recordDate}
           onChangeText={setRecordDate}
           placeholder="2024-06-01"
           keyboardType="numeric"
           error={errors.recordDate}
         />
-        <Input label="Veterinarian" value={veterinarian} onChangeText={setVeterinarian} placeholder="Dr. Smith" />
+        <Input label={S.recordVet} value={veterinarian} onChangeText={setVeterinarian} placeholder={S.recordVetPlaceholder} />
         <Input
-          label="Notes"
+          label={S.notes}
           value={description}
           onChangeText={setDescription}
-          placeholder="Additional details..."
+          placeholder={S.notesPlaceholder}
           multiline
           numberOfLines={4}
           style={styles.textArea}
         />
 
-        {/* Attachments */}
         <TouchableOpacity style={styles.attachBtn} onPress={pickAttachment}>
           <Ionicons name="attach" size={20} color="#4CAF82" />
           <Text style={styles.attachBtnText}>
-            Add Attachments {attachmentUris.length > 0 ? `(${attachmentUris.length} new)` : ''}
+            {attachmentUris.length > 0 ? S.addAttachmentsCount(attachmentUris.length) : S.addAttachments}
           </Text>
         </TouchableOpacity>
 
         <Button
-          title={recordId ? 'Save Changes' : 'Add Record'}
+          title={recordId ? S.saveChanges : S.addRecord}
           onPress={handleSave}
           loading={saving}
           style={styles.saveBtn}

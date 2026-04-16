@@ -15,14 +15,15 @@ import { useUser } from '@clerk/expo';
 import { useVetStore } from '../../store/vetStore';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { EmptyState } from '../../components/common/EmptyState';
+import { S } from '../../lib/strings';
 import type { AppointmentsStackParamList, Appointment, AppointmentStatus } from '../../types';
 
 type Props = NativeStackScreenProps<AppointmentsStackParamList, 'AppointmentCalendar'>;
 
 const STATUS_CONFIG: Record<AppointmentStatus, { color: string; label: string }> = {
-  scheduled: { color: '#2196F3', label: 'Scheduled' },
-  completed: { color: '#4CAF82', label: 'Completed' },
-  cancelled: { color: '#9E9E9E', label: 'Cancelled' },
+  scheduled: { color: '#2196F3', label: S.statusScheduled },
+  completed: { color: '#4CAF82', label: S.statusCompleted },
+  cancelled: { color: '#9E9E9E', label: S.statusCancelled },
 };
 
 export function AppointmentCalendarScreen({ navigation }: Props) {
@@ -39,7 +40,6 @@ export function AppointmentCalendarScreen({ navigation }: Props) {
 
   const handleRefresh = useCallback(() => { if (userId) fetchAppointments(userId); }, [userId, fetchAppointments]);
 
-  // Build calendar marks from appointments
   const markedDates = appointments.reduce<Record<string, { marked: boolean; dotColor: string; dots?: { color: string }[] }>>(
     (acc, appt) => {
       const date = appt.appointment_at.split('T')[0];
@@ -71,28 +71,28 @@ export function AppointmentCalendarScreen({ navigation }: Props) {
 
   function handleStatusChange(appt: Appointment) {
     const options: AppointmentStatus[] = ['scheduled', 'completed', 'cancelled'];
-    Alert.alert('Change Status', `Current: ${appt.status}`, [
+    Alert.alert(S.changeStatus, S.changeStatusCurrent(STATUS_CONFIG[appt.status].label), [
       ...options
         .filter((s) => s !== appt.status)
         .map((s) => ({
           text: STATUS_CONFIG[s].label,
           onPress: () =>
             updateAppointment(appt.id, { status: s }, userId).catch(() =>
-              Alert.alert('Error', 'Could not update status.'),
+              Alert.alert(S.error, S.appointmentSaveError),
             ),
         })),
-      { text: 'Cancel', style: 'cancel' },
+      { text: S.cancel, style: 'cancel' },
     ]);
   }
 
   function handleDelete(appt: Appointment, uid: string) {
-    Alert.alert('Delete Appointment', `Delete "${appt.title}"?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(S.deleteAppointment, S.deleteAppointmentConfirm(appt.title), [
+      { text: S.cancel, style: 'cancel' },
       {
-        text: 'Delete',
+        text: S.delete,
         style: 'destructive',
         onPress: () =>
-          deleteAppointment(appt.id, uid).catch(() => Alert.alert('Error', 'Could not delete.')),
+          deleteAppointment(appt.id, uid).catch(() => Alert.alert(S.error, S.deleteAppointmentError)),
       },
     ]);
   }
@@ -104,11 +104,11 @@ export function AppointmentCalendarScreen({ navigation }: Props) {
         style={styles.card}
         onPress={() => navigation.navigate('AddAppointment', { appointmentId: item.id })}
         onLongPress={() =>
-          Alert.alert(item.title, 'Options', [
-            { text: 'Change Status', onPress: () => handleStatusChange(item) },
-            { text: 'Edit', onPress: () => navigation.navigate('AddAppointment', { appointmentId: item.id }) },
-            { text: 'Delete', style: 'destructive', onPress: () => handleDelete(item, userId) },
-            { text: 'Cancel', style: 'cancel' },
+          Alert.alert(item.title, S.appointmentOptions, [
+            { text: S.changeStatus, onPress: () => handleStatusChange(item) },
+            { text: S.edit, onPress: () => navigation.navigate('AddAppointment', { appointmentId: item.id }) },
+            { text: S.delete, style: 'destructive', onPress: () => handleDelete(item, userId) },
+            { text: S.cancel, style: 'cancel' },
           ])
         }
         activeOpacity={0.75}
@@ -160,12 +160,12 @@ export function AppointmentCalendarScreen({ navigation }: Props) {
       <View style={styles.listHeader}>
         <Text style={styles.listHeaderText}>
           {selectedDate
-            ? `Appointments on ${selectedDate}`
-            : `Upcoming (${filteredAppointments.length})`}
+            ? S.appointmentsOnDate(selectedDate)
+            : S.upcomingAppointments(filteredAppointments.length)}
         </Text>
         {selectedDate ? (
           <TouchableOpacity onPress={() => setSelectedDate('')}>
-            <Text style={styles.clearDate}>Clear</Text>
+            <Text style={styles.clearDate}>{S.clearDate}</Text>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -178,8 +178,8 @@ export function AppointmentCalendarScreen({ navigation }: Props) {
         ListEmptyComponent={
           <EmptyState
             icon="calendar-outline"
-            title={selectedDate ? 'No appointments on this day' : 'No upcoming appointments'}
-            subtitle="Tap + to schedule a new appointment."
+            title={selectedDate ? S.noAppointmentsDay : S.noUpcomingAppointments}
+            subtitle={S.noAppointmentsHint}
           />
         }
       />
@@ -196,7 +196,7 @@ export function AppointmentCalendarScreen({ navigation }: Props) {
 }
 
 function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString('en-US', {
+  return new Date(iso).toLocaleString('pt-BR', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',

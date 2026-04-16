@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { AppointmentCalendarScreen } from '../screens/appointments/AppointmentCalendarScreen';
 import { AddAppointmentScreen } from '../screens/appointments/AddAppointmentScreen';
+import { S } from '../lib/strings';
 import type { AppointmentsStackParamList } from '../types';
 
 const Stack = createNativeStackNavigator<AppointmentsStackParamList>();
@@ -19,13 +20,13 @@ export function AppointmentsNavigator() {
       <Stack.Screen
         name="AppointmentCalendar"
         component={AppointmentCalendarScreen}
-        options={{ title: 'Appointments' }}
+        options={{ title: S.appointments }}
       />
       <Stack.Screen
         name="AddAppointment"
         component={AddAppointmentScreen}
         options={({ route }) => ({
-          title: route.params?.appointmentId ? 'Edit Appointment' : 'New Appointment',
+          title: route.params?.appointmentId ? S.editAppointment : S.newAppointment,
         })}
       />
     </Stack.Navigator>

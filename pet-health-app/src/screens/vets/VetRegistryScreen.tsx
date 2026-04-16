@@ -14,6 +14,7 @@ import { useUser } from '@clerk/expo';
 import { useVetStore } from '../../store/vetStore';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { EmptyState } from '../../components/common/EmptyState';
+import { S } from '../../lib/strings';
 import type { VetsStackParamList, Vet } from '../../types';
 
 type Props = NativeStackScreenProps<VetsStackParamList, 'VetRegistry'>;
@@ -69,8 +70,8 @@ export function VetRegistryScreen({ navigation }: Props) {
         ListEmptyComponent={
           <EmptyState
             icon="medkit-outline"
-            title="No vets registered"
-            subtitle="Tap + to add a veterinarian to your registry."
+            title={S.noVets}
+            subtitle={S.noVetsHint}
           />
         }
       />

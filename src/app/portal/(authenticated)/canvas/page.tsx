@@ -23,7 +23,9 @@ export default function CanvasPage() {
   const [mentoradoId, setMentoradoId] = useState<string | null>(null);
   const [saving, startSave] = useTransition();
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [creating, startCreate] = useTransition();
+  const [createError, setCreateError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -58,8 +60,9 @@ export default function CanvasPage() {
   async function handleSave() {
     if (!active || !mentoradoId) return;
     startSave(async () => {
+      setSaveError(null);
       const supabase = createClient();
-      await supabase.from("canvas").update({
+      const { error } = await supabase.from("canvas").update({
         title: form.title,
         context: form.context,
         criteria: form.criteria,
@@ -70,6 +73,11 @@ export default function CanvasPage() {
         scenarios: form.scenarios,
         final_decision: form.final_decision,
       }).eq("id", active.id);
+
+      if (error) {
+        setSaveError("Erro ao salvar o canvas. Tente novamente.");
+        return;
+      }
 
       const { data } = await supabase.from("canvas").select("*").eq("mentorado_id", mentoradoId).order("created_at", { ascending: false });
       const list = (data ?? []) as Canvas[];
@@ -83,6 +91,7 @@ export default function CanvasPage() {
   async function handleNew() {
     if (!mentoradoId) return;
     startCreate(async () => {
+      setCreateError(null);
       const supabase = createClient();
       const nextVersion = (canvasList[0]?.version_number ?? 0) + 1;
 
@@ -91,19 +100,22 @@ export default function CanvasPage() {
         await supabase.from("canvas").update({ status: "archived" }).eq("id", active.id);
       }
 
-      const { data } = await supabase.from("canvas").insert({
+      const { data, error } = await supabase.from("canvas").insert({
         mentorado_id: mentoradoId,
         version_number: nextVersion,
         title: `Canvas v${nextVersion}`,
         status: "active",
       }).select().single();
 
-      if (data) {
-        const newCanvas = data as Canvas;
-        setCanvasList(prev => [newCanvas, ...prev]);
-        setActive(newCanvas);
-        setForm(newCanvas);
+      if (error || !data) {
+        setCreateError("Erro ao criar nova versão. Tente novamente.");
+        return;
       }
+
+      const newCanvas = data as Canvas;
+      setCanvasList(prev => [newCanvas, ...prev]);
+      setActive(newCanvas);
+      setForm(newCanvas);
     });
   }
 
@@ -128,13 +140,16 @@ export default function CanvasPage() {
           <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a]">Estruture sua decisão</h1>
           <p className="text-[#64748b] text-sm mt-1">7 dimensões para tomar decisões com método, não no impulso.</p>
         </div>
-        <button
-          onClick={handleNew}
-          disabled={creating}
-          className="shrink-0 bg-[#0f172a] hover:bg-[#1e293b] disabled:opacity-60 text-white text-xs font-bold px-4 py-2 rounded-full transition-colors"
-        >
-          {creating ? "Criando…" : "+ Nova versão"}
-        </button>
+        <div className="flex flex-col items-end gap-1">
+          <button
+            onClick={handleNew}
+            disabled={creating}
+            className="shrink-0 bg-[#0f172a] hover:bg-[#1e293b] disabled:opacity-60 text-white text-xs font-bold px-4 py-2 rounded-full transition-colors"
+          >
+            {creating ? "Criando…" : "+ Nova versão"}
+          </button>
+          {createError && <span className="text-red-500 text-xs">{createError}</span>}
+        </div>
       </div>
 
       {/* Version selector */}
@@ -223,7 +238,7 @@ export default function CanvasPage() {
           </div>
 
           {/* Save */}
-          <div className="flex items-center gap-3 mt-6">
+          <div className="flex items-center gap-3 mt-6 flex-wrap">
             <button
               onClick={handleSave}
               disabled={saving}
@@ -232,6 +247,7 @@ export default function CanvasPage() {
               {saving ? "Salvando…" : "Salvar Canvas"}
             </button>
             {saved && <span className="text-green-600 text-sm font-medium">Salvo!</span>}
+            {saveError && <span className="text-red-500 text-sm">{saveError}</span>}
           </div>
 
           <p className="text-[#94a3b8] text-xs mt-4">

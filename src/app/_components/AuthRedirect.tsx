@@ -35,6 +35,7 @@ export function AuthRedirect() {
           }
         }
       );
+      return () => subscription.unsubscribe();
     }
   }, [router, searchParams]);
 

@@ -32,6 +32,7 @@ export default function CheckinPage() {
   const [form, setForm] = useState({ clarity_score: 5, confidence_score: 5, mood: "neutral" as Mood, wins: "", blockers: "", notes: "" });
   const [saving, startSave] = useTransition();
   const [done, setDone] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -51,8 +52,9 @@ export default function CheckinPage() {
     e.preventDefault();
     if (!mentoradoId) return;
     startSave(async () => {
+      setSaveError(null);
       const supabase = createClient();
-      await supabase.from("checkins").insert({
+      const { error } = await supabase.from("checkins").insert({
         mentorado_id: mentoradoId,
         clarity_score: form.clarity_score,
         confidence_score: form.confidence_score,
@@ -61,6 +63,10 @@ export default function CheckinPage() {
         blockers: form.blockers || null,
         notes: form.notes || null,
       });
+      if (error) {
+        setSaveError("Erro ao salvar o check-in. Tente novamente.");
+        return;
+      }
       setDone(true);
       const { data } = await supabase.from("checkins").select("*").eq("mentorado_id", mentoradoId).order("created_at", { ascending: false }).limit(10);
       setHistory((data ?? []) as Checkin[]);
@@ -191,6 +197,10 @@ export default function CheckinPage() {
             className="w-full text-sm text-[#0f172a] placeholder-[#94a3b8] border border-[#e2e8f0] rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1E88E5] resize-none"
           />
         </div>
+
+        {saveError && (
+          <p className="text-red-500 text-sm bg-red-50 px-3 py-2 rounded-lg text-center">{saveError}</p>
+        )}
 
         <button
           type="submit"

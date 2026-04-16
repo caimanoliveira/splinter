@@ -89,7 +89,13 @@ function LoginForm() {
         </button>
       </form>
 
-      <p className="text-[#94a3b8] text-xs text-center mt-5 leading-relaxed">
+      <p className="text-[#94a3b8] text-xs text-center mt-4 leading-relaxed">
+        <a href="/portal/login/recuperar" className="text-[#1E88E5] hover:underline">
+          Esqueci minha senha
+        </a>
+      </p>
+
+      <p className="text-[#94a3b8] text-xs text-center mt-3 leading-relaxed">
         Problema com acesso?{" "}
         <a
           href="mailto:mentoriacarreiraedecisao@gmail.com"

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase-server";
 import type { Mentorado, Tarefa, Sessao, Checkin, Marco } from "@/types/portal";
+import OnboardingBanner from "../_components/OnboardingBanner";
 
 function formatDate(d: string | null) {
   if (!d) return "—";
@@ -30,17 +31,23 @@ export default async function DashboardPage() {
   );
 
   const mid = mentorado.id;
-  const [sessoesR, tarefasR, checkinsR, marcosR] = await Promise.all([
+  const [sessoesR, tarefasR, checkinsR, marcosR, canvasCountR, checkinCountR] = await Promise.all([
     supabase.from("sessoes").select("*").eq("mentorado_id", mid).order("date", { ascending: false }).limit(5),
     supabase.from("tarefas").select("*").eq("mentorado_id", mid).order("due_date", { ascending: true, nullsFirst: false }),
     supabase.from("checkins").select("*").eq("mentorado_id", mid).order("created_at", { ascending: false }).limit(1),
     supabase.from("marcos").select("*").eq("mentorado_id", mid).order("order", { ascending: true }),
+    supabase.from("canvas").select("id", { count: "exact", head: true }).eq("mentorado_id", mid),
+    supabase.from("checkins").select("id", { count: "exact", head: true }).eq("mentorado_id", mid),
   ]);
 
   const sessoes  = (sessoesR.data  ?? []) as Sessao[];
   const tarefas  = (tarefasR.data  ?? []) as Tarefa[];
   const checkins = (checkinsR.data ?? []) as Checkin[];
   const marcos   = (marcosR.data   ?? []) as Marco[];
+
+  const canvasCount  = canvasCountR.count ?? 0;
+  const checkinCount = checkinCountR.count ?? 0;
+  const isFirstAccess = canvasCount === 0 && checkinCount === 0;
 
   const lastCheckin = checkins[0] ?? null;
   const pending = tarefas.filter(t => t.status !== "done");
@@ -54,6 +61,9 @@ export default async function DashboardPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
+      {/* Onboarding banner — shown only on first access */}
+      {isFirstAccess && <OnboardingBanner />}
+
       {/* Header */}
       <div className="mb-8">
         <p className="text-[#1E88E5] text-xs font-semibold tracking-widest uppercase mb-1">Sua Travessia</p>
@@ -145,12 +155,12 @@ export default async function DashboardPage() {
       )}
 
       {/* Tarefas pendentes */}
-      {pending.length > 0 && (
-        <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-sm mb-5">
-          <div className="px-5 py-4 border-b border-[#e2e8f0] flex items-center justify-between">
-            <h2 className="font-bold text-[#0f172a] text-sm">Próximas Tarefas</h2>
-            <Link href="/portal/tarefas" className="text-[#1E88E5] text-xs font-semibold hover:underline">Ver todas →</Link>
-          </div>
+      <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-sm mb-5">
+        <div className="px-5 py-4 border-b border-[#e2e8f0] flex items-center justify-between">
+          <h2 className="font-bold text-[#0f172a] text-sm">Próximas Tarefas</h2>
+          <Link href="/portal/tarefas" className="text-[#1E88E5] text-xs font-semibold hover:underline">Ver todas →</Link>
+        </div>
+        {pending.length > 0 ? (
           <ul className="divide-y divide-[#f1f5f9]">
             {pending.slice(0, 4).map(t => (
               <li key={t.id} className="px-5 py-3 flex items-center gap-3">
@@ -160,15 +170,22 @@ export default async function DashboardPage() {
               </li>
             ))}
           </ul>
-        </div>
-      )}
+        ) : (
+          <div className="px-5 py-8 text-center">
+            <p className="text-[#94a3b8] text-sm">Nenhuma tarefa pendente no momento.</p>
+            <p className="text-[#64748b] text-xs mt-1">Seu mentor criará tarefas após a próxima sessão.</p>
+          </div>
+        )}
+      </div>
 
       {/* Última sessão */}
-      {sessoes[0] && (
-        <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-sm mb-5">
-          <div className="px-5 py-4 border-b border-[#e2e8f0]">
-            <h2 className="font-bold text-[#0f172a] text-sm">Última Sessão — {formatDate(sessoes[0].date)}</h2>
-          </div>
+      <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-sm mb-5">
+        <div className="px-5 py-4 border-b border-[#e2e8f0]">
+          <h2 className="font-bold text-[#0f172a] text-sm">
+            {sessoes[0] ? `Última Sessão — ${formatDate(sessoes[0].date)}` : "Última Sessão"}
+          </h2>
+        </div>
+        {sessoes.length > 0 ? (
           <div className="px-5 py-4 flex flex-col gap-3">
             {sessoes[0].summary && (
               <div>
@@ -183,8 +200,13 @@ export default async function DashboardPage() {
               </div>
             )}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="px-5 py-8 text-center">
+            <p className="text-[#94a3b8] text-sm">Sua primeira sessão aparecerá aqui.</p>
+            <p className="text-[#64748b] text-xs mt-1">Após cada sessão, seu mentor registra o resumo e os próximos passos.</p>
+          </div>
+        )}
+      </div>
 
       {/* CTAs rápidos */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

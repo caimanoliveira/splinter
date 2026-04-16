@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic"
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
-import { ArrowLeft, Plus } from "lucide-react"
+import { ArrowLeft, Plus, UserPlus } from "lucide-react"
 import Link from "next/link"
 
 interface Mentorado {
@@ -60,6 +60,9 @@ export default function MentoradoDetailPage() {
   const [avaliacoes, setAvaliacoes] = useState<AvaliacaoWithComp[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<"sessoes" | "tarefas" | "materiais" | "avaliacoes">("sessoes")
+  const [criandoAcesso, setCriandoAcesso] = useState(false)
+  const [acessoStatus, setAcessoStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [acessoError, setAcessoError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -81,6 +84,33 @@ export default function MentoradoDetailPage() {
     }
     load()
   }, [id])
+
+  async function handleCriarAcesso() {
+    if (!mentorado) return
+    setCriandoAcesso(true)
+    setAcessoStatus('idle')
+    setAcessoError(null)
+
+    const res = await fetch('/api/criar-acesso', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: mentorado.email,
+        mentorado_id: mentorado.id,
+        name: mentorado.name,
+      }),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      setAcessoStatus('error')
+      setAcessoError(data.error || 'Erro ao criar acesso')
+    } else {
+      setAcessoStatus('success')
+    }
+    setCriandoAcesso(false)
+  }
 
   if (loading) return <div className="text-center py-20 text-slate-400">Carregando…</div>
   if (!mentorado) return <div className="text-center py-20 text-slate-400">Mentorado não encontrado.</div>
@@ -107,7 +137,7 @@ export default function MentoradoDetailPage() {
       </div>
 
       {/* Quick actions */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-2">
         <Link
           href={`/mentorados/${id}/nova-sessao`}
           className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
@@ -120,7 +150,34 @@ export default function MentoradoDetailPage() {
         >
           <Plus className="h-4 w-4" /> Nova Tarefa
         </Link>
+        <button
+          onClick={handleCriarAcesso}
+          disabled={criandoAcesso || acessoStatus === 'success'}
+          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+        >
+          {criandoAcesso ? (
+            'Criando…'
+          ) : acessoStatus === 'success' ? (
+            '✓ Acesso criado'
+          ) : (
+            <>
+              <UserPlus className="h-4 w-4" /> Criar acesso no portal
+            </>
+          )}
+        </button>
       </div>
+      {acessoStatus === 'success' && (
+        <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 mb-4">
+          <span>✓</span>
+          <span>Email de boas-vindas enviado para <strong>{mentorado?.email}</strong>. O mentorado receberá um link para definir sua senha.</span>
+        </div>
+      )}
+      {acessoStatus === 'error' && (
+        <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4">
+          <span>⚠</span>
+          <span>{acessoError}</span>
+        </div>
+      )}
 
       {/* Notes */}
       {mentorado.notes && (

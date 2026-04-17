@@ -16,6 +16,44 @@ const dimensions = [
 
 type DimensionKey = typeof dimensions[number]["key"];
 
+const helpContent: Record<string, { definition: string; questions: string[]; example: string }> = {
+  context: {
+    definition: "O ponto de partida: qual decisão está em jogo, quando precisa ser tomada e o que a torna difícil.",
+    questions: ["Qual é exatamente a decisão que preciso tomar?", "Qual é o prazo real ou percebido?", "O que tornaria isso uma decisão fácil?"],
+    example: "Ex: 'Decido até 30/05 se aceito a proposta da empresa X ou peço promoção onde estou. É difícil porque as duas opções têm vantagens reais.'"
+  },
+  criteria: {
+    definition: "Os filtros que qualquer opção boa precisa passar. São suas linhas inegociáveis.",
+    questions: ["O que precisa ser verdade para a decisão estar certa?", "Quais critérios são inegociáveis vs. desejáveis?", "Se só um critério pudesse ser atendido, qual seria?"],
+    example: "Ex: 'Inegociáveis: salário mínimo R$12k, trabalho remoto pelo menos 3x/semana. Desejáveis: liderança técnica, stack moderna.'"
+  },
+  constraints: {
+    definition: "As restrições reais que limitam suas opções — não as percebidas, as reais.",
+    questions: ["Qual é minha real margem financeira para arriscar?", "Quais compromissos familiares ou pessoais não posso ignorar?", "O que o mercado me permite ou impede agora?"],
+    example: "Ex: 'Tenho reserva de 4 meses. Filha começa escola em março — mudança de cidade só depois. CNPJ ativo facilita negociação como PJ.'"
+  },
+  invisible_vars: {
+    definition: "As variáveis que quase ninguém analisa mas que frequentemente decidem se você vai ser feliz na escolha.",
+    questions: ["Como é o gestor direto que me lideraria?", "Qual é a cultura de decisão da empresa — centralizada ou descentralizada?", "Qual o custo emocional de cada opção no dia a dia?"],
+    example: "Ex: 'No emprego A, o gestor microgerencia — isso me drena. No B, há incerteza de funding — gera ansiedade constante que eu subestimei antes.'"
+  },
+  value_patterns: {
+    definition: "O que a sua própria história revela sobre o que te energiza e o que te drena.",
+    questions: ["Quais escolhas passadas me deram mais energia no trabalho?", "O que em projetos anteriores me fez querer largar tudo?", "Que tipo de ambiente tira meu melhor?"],
+    example: "Ex: 'Sempre fui mais feliz em empresas pequenas com autonomia. No banco grande fiquei 1 ano e pedi demissão. Isso me diz algo.'"
+  },
+  possibilities: {
+    definition: "Os caminhos reais disponíveis — incluindo os não óbvios que você pode estar ignorando.",
+    questions: ["Quais são as opções que eu já sei que existem?", "Existe uma terceira via que eu não estou considerando?", "O que mudaria se eu tivesse 10 anos a mais de experiência?"],
+    example: "Ex: 'Opções: (A) aceitar oferta, (B) pedir promoção, (C) negociar contraproposta com A para usar como alavanca em B, (D) freelance por 6 meses enquanto exploro.'"
+  },
+  scenarios: {
+    definition: "A análise de trade-offs: o que você ganha e perde em cada caminho.",
+    questions: ["Se eu escolher A, o que ganho e o que abro mão?", "Qual cenário eu conseguiria reverter se der errado?", "Em qual opção eu me arrependeria menos daqui a 5 anos?"],
+    example: "Ex: 'Se A: ganho salário, perco autonomia e crescimento técnico. Se B: mantenho segurança, arriscos ficar estagnado. Se C: mais incerteza, mais aprendizado.'"
+  },
+};
+
 export default function CanvasPage() {
   const [canvasList, setCanvasList] = useState<Canvas[]>([]);
   const [active, setActive] = useState<Canvas | null>(null);
@@ -24,6 +62,7 @@ export default function CanvasPage() {
   const [saving, startSave] = useTransition();
   const [saved, setSaved] = useState(false);
   const [creating, startCreate] = useTransition();
+  const [openHelp, setOpenHelp] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -194,8 +233,30 @@ export default function CanvasPage() {
               <div key={key} className="bg-white rounded-2xl border border-[#e2e8f0] shadow-sm overflow-hidden">
                 <div className="px-5 py-3 border-b border-[#e2e8f0] flex items-center gap-2">
                   <div className="w-1.5 h-4 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                  <p className="font-bold text-[#0f172a] text-sm">{label}</p>
+                  <p className="font-bold text-[#0f172a] text-sm flex-1">{label}</p>
+                  <button
+                    type="button"
+                    onClick={() => setOpenHelp(openHelp === key ? null : key)}
+                    className="w-6 h-6 rounded-full border border-[#e2e8f0] bg-[#F7F8FC] hover:bg-[#e2e8f0] text-[#64748b] text-xs font-bold flex items-center justify-center transition-colors shrink-0"
+                    aria-label={`Ajuda para ${label}`}
+                  >
+                    ?
+                  </button>
                 </div>
+                {openHelp === key && (
+                  <div className="px-5 py-4 bg-[#F7F8FC] border-b border-[#e2e8f0] text-sm">
+                    <p className="text-[#0f172a] font-medium mb-2">{helpContent[key].definition}</p>
+                    <ul className="flex flex-col gap-1 mb-3">
+                      {helpContent[key].questions.map((q, i) => (
+                        <li key={i} className="text-[#475569] text-xs flex gap-2">
+                          <span className="text-[#1E88E5] shrink-0">→</span>
+                          <span>{q}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="text-[#64748b] text-xs italic border-l-2 border-[#1E88E5] pl-3">{helpContent[key].example}</p>
+                  </div>
+                )}
                 <textarea
                   rows={3}
                   value={(form as Record<string, string | null>)[key] ?? ""}

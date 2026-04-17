@@ -17,6 +17,63 @@ const scoreLabels: Record<number, string> = {
   10: "Excepcional",
 };
 
+function EvolucaoChart({ competencias, avaliacoes }: { competencias: Competencia[]; avaliacoes: AvaliacaoCompetencia[] }) {
+  const data = competencias.map((comp) => {
+    const history = avaliacoes
+      .filter((a) => a.competencia_id === comp.id)
+      .sort((a, b) => a.assessed_at.localeCompare(b.assessed_at));
+    if (history.length < 2) return null;
+    return {
+      name: comp.name,
+      first: history[0].score,
+      latest: history[history.length - 1].score,
+      delta: history[history.length - 1].score - history[0].score,
+    };
+  }).filter(Boolean) as { name: string; first: number; latest: number; delta: number }[];
+
+  if (data.length === 0) return null;
+
+  return (
+    <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-sm p-5 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <p className="font-bold text-[#0f172a] text-sm">Evolução das Competências</p>
+          <p className="text-[#64748b] text-xs mt-0.5">Comparativo: primeira vs. última avaliação</p>
+        </div>
+        <div className="flex items-center gap-3 text-[10px] text-[#64748b]">
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-[#e2e8f0] inline-block" /> Início</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-[#1E88E5] inline-block" /> Atual</span>
+        </div>
+      </div>
+      <div className="flex flex-col gap-3">
+        {data.map(({ name, first, latest, delta }) => (
+          <div key={name}>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-[#475569] font-medium truncate flex-1 pr-2">{name}</p>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className={`text-xs font-bold ${delta > 0 ? "text-green-600" : delta < 0 ? "text-red-500" : "text-[#94a3b8]"}`}>
+                  {delta > 0 ? `+${delta}` : delta === 0 ? "=" : delta}
+                </span>
+                <span className="text-[#0f172a] text-xs font-extrabold">{latest}<span className="text-[#94a3b8] font-normal">/10</span></span>
+              </div>
+            </div>
+            <div className="relative h-2.5 bg-[#F7F8FC] rounded-full overflow-hidden">
+              <div
+                className="absolute inset-y-0 left-0 rounded-full bg-[#e2e8f0]"
+                style={{ width: `${(first / 10) * 100}%` }}
+              />
+              <div
+                className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#1E88E5] to-[#1565C0] transition-all duration-500"
+                style={{ width: `${(latest / 10) * 100}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ScoreBar({ score, max = 10 }: { score: number; max?: number }) {
   return (
     <div className="h-2 bg-[#F7F8FC] rounded-full overflow-hidden">
@@ -131,6 +188,8 @@ export default function AvaliacaoPage() {
           Avalie suas competências de 1 a 10. Seja honesto — é para você, não para impressionar.
         </p>
       </div>
+
+      <EvolucaoChart competencias={competencias} avaliacoes={avaliacoes} />
 
       {competencias.length === 0 ? (
         <div className="bg-white rounded-2xl border border-[#e2e8f0] p-10 text-center">

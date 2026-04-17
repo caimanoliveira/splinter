@@ -30,6 +30,10 @@ interface AvaliacaoWithComp {
   id: string; score: number; notes: string | null; assessed_at: string
   competencia: { name: string } | null
 }
+interface Marco {
+  id: string; title: string; description: string | null
+  order: number; is_achieved: boolean; achieved_at: string | null
+}
 
 const statusColors: Record<string, string> = {
   active: "bg-emerald-100 text-emerald-700",
@@ -58,8 +62,11 @@ export default function MentoradoDetailPage() {
   const [tarefas, setTarefas] = useState<Tarefa[]>([])
   const [materiais, setMateriais] = useState<MentoradoMaterial[]>([])
   const [avaliacoes, setAvaliacoes] = useState<AvaliacaoWithComp[]>([])
+  const [marcos, setMarcos] = useState<Marco[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<"sessoes" | "tarefas" | "materiais" | "avaliacoes">("sessoes")
+  const [activeTab, setActiveTab] = useState<"sessoes" | "tarefas" | "materiais" | "avaliacoes" | "marcos">("sessoes")
+  const [novoMarco, setNovoMarco] = useState({ title: "", description: "" })
+  const [savingMarco, setSavingMarco] = useState(false)
   const [criandoAcesso, setCriandoAcesso] = useState(false)
   const [acessoStatus, setAcessoStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [acessoError, setAcessoError] = useState<string | null>(null)
@@ -68,18 +75,20 @@ export default function MentoradoDetailPage() {
     if (!id) return
     async function load() {
       setLoading(true)
-      const [m, s, t, mt, av] = await Promise.all([
+      const [m, s, t, mt, av, mk] = await Promise.all([
         supabase.from("mentorados").select("*").eq("id", id).single(),
         supabase.from("sessoes").select("*").eq("mentorado_id", id).order("date", { ascending: false }),
         supabase.from("tarefas").select("*").eq("mentorado_id", id).order("created_at", { ascending: false }),
         supabase.from("mentorado_materiais").select("*, material:materiais(*)").eq("mentorado_id", id).order("unlocked_at", { ascending: false }),
         supabase.from("avaliacoes_competencia").select("*, competencia:competencias(name)").eq("mentorado_id", id).order("assessed_at", { ascending: false }).limit(20),
+        supabase.from("marcos").select("*").eq("mentorado_id", id).order("order", { ascending: true }),
       ])
       setMentorado(m.data)
       setSessoes(s.data ?? [])
       setTarefas(t.data ?? [])
       setMateriais(mt.data ?? [])
       setAvaliacoes(av.data ?? [])
+      setMarcos(mk.data ?? [])
       setLoading(false)
     }
     load()
@@ -110,6 +119,36 @@ export default function MentoradoDetailPage() {
       setAcessoStatus('success')
     }
     setCriandoAcesso(false)
+  }
+
+  async function handleAddMarco() {
+    if (!novoMarco.title.trim() || !id) return
+    setSavingMarco(true)
+    const nextOrder = (marcos[marcos.length - 1]?.order ?? 0) + 1
+    const { data } = await supabase.from("marcos").insert({
+      mentorado_id: id,
+      title: novoMarco.title.trim(),
+      description: novoMarco.description.trim() || null,
+      order: nextOrder,
+      is_achieved: false,
+    }).select().single()
+    if (data) setMarcos(prev => [...prev, data as Marco])
+    setNovoMarco({ title: "", description: "" })
+    setSavingMarco(false)
+  }
+
+  async function handleToggleMarco(marco: Marco) {
+    const achieved = !marco.is_achieved
+    await supabase.from("marcos").update({
+      is_achieved: achieved,
+      achieved_at: achieved ? new Date().toISOString() : null,
+    }).eq("id", marco.id)
+    setMarcos(prev => prev.map(m => m.id === marco.id ? { ...m, is_achieved: achieved, achieved_at: achieved ? new Date().toISOString() : null } : m))
+  }
+
+  async function handleDeleteMarco(marcoId: string) {
+    await supabase.from("marcos").delete().eq("id", marcoId)
+    setMarcos(prev => prev.filter(m => m.id !== marcoId))
   }
 
   if (loading) return <div className="text-center py-20 text-slate-400">Carregando…</div>
@@ -188,7 +227,7 @@ export default function MentoradoDetailPage() {
 
       {/* Tabs */}
       <div className="flex border-b border-slate-200 mb-6 gap-1">
-        {(["sessoes", "tarefas", "materiais", "avaliacoes"] as const).map((tab) => (
+        {(["sessoes", "tarefas", "materiais", "avaliacoes", "marcos"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -198,9 +237,9 @@ export default function MentoradoDetailPage() {
                 : "border-transparent text-slate-500 hover:text-slate-700"
             }`}
           >
-            {tab === "sessoes" ? "Sessões" : tab === "tarefas" ? "Tarefas" : tab === "materiais" ? "Materiais" : "Avaliações"}
+            {tab === "sessoes" ? "Sessões" : tab === "tarefas" ? "Tarefas" : tab === "materiais" ? "Materiais" : tab === "avaliacoes" ? "Avaliações" : "Marcos"}
             <span className="ml-1.5 text-xs text-slate-400">
-              ({tab === "sessoes" ? sessoes.length : tab === "tarefas" ? tarefas.length : tab === "materiais" ? materiais.length : avaliacoes.length})
+              ({tab === "sessoes" ? sessoes.length : tab === "tarefas" ? tarefas.length : tab === "materiais" ? materiais.length : tab === "avaliacoes" ? avaliacoes.length : marcos.length})
             </span>
           </button>
         ))}
@@ -313,6 +352,82 @@ export default function MentoradoDetailPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Marcos */}
+      {activeTab === "marcos" && (
+        <div className="flex flex-col gap-4">
+          {/* Add marco form */}
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <p className="text-sm font-semibold text-slate-700 mb-3">Adicionar marco</p>
+            <div className="flex flex-col gap-2">
+              <input
+                type="text"
+                placeholder="Título do marco"
+                value={novoMarco.title}
+                onChange={e => setNovoMarco(prev => ({ ...prev, title: e.target.value }))}
+                className="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <input
+                type="text"
+                placeholder="Descrição (opcional)"
+                value={novoMarco.description}
+                onChange={e => setNovoMarco(prev => ({ ...prev, description: e.target.value }))}
+                className="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <button
+                onClick={handleAddMarco}
+                disabled={savingMarco || !novoMarco.title.trim()}
+                className="self-start flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+              >
+                <Plus className="h-4 w-4" /> {savingMarco ? "Salvando…" : "Adicionar"}
+              </button>
+            </div>
+          </div>
+
+          {/* Marcos list */}
+          {marcos.length === 0 ? (
+            <p className="text-slate-400 text-sm py-4 text-center">Nenhum marco definido. Crie o primeiro acima.</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {marcos.map((m) => (
+                <div key={m.id} className="bg-white rounded-xl border border-slate-200 p-4 flex items-start gap-3">
+                  <button
+                    onClick={() => handleToggleMarco(m)}
+                    className={`mt-0.5 w-5 h-5 rounded-full border-2 shrink-0 transition-colors flex items-center justify-center ${
+                      m.is_achieved ? "bg-indigo-600 border-indigo-600" : "border-slate-300 hover:border-indigo-400"
+                    }`}
+                    aria-label={m.is_achieved ? "Marcar como não atingido" : "Marcar como atingido"}
+                  >
+                    {m.is_achieved && (
+                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-semibold ${m.is_achieved ? "text-slate-400 line-through" : "text-slate-900"}`}>{m.title}</p>
+                    {m.description && <p className="text-xs text-slate-500 mt-0.5">{m.description}</p>}
+                    {m.achieved_at && (
+                      <p className="text-xs text-indigo-500 mt-0.5">
+                        Atingido em {new Date(m.achieved_at).toLocaleDateString("pt-BR")}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleDeleteMarco(m.id)}
+                    className="text-slate-300 hover:text-red-400 transition-colors shrink-0"
+                    aria-label="Remover marco"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -146,3 +146,8 @@ dmypy.json
 .next/
 next-env.d.ts
 node_modules/
+
+# Local env files (never commit)
+.env.local
+.env.*.local
+.vercel

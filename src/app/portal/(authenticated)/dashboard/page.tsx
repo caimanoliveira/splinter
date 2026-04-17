@@ -54,10 +54,58 @@ export default async function DashboardPage() {
   const achieved = marcos.filter(m => m.is_achieved).length;
   const totalMarcos = marcos.length;
 
-  // Progress: sessões feitas / estimativa baseada no produto
+  // Product tier detection
+  const isGrupo     = mentorado.product_name?.toLowerCase().includes("grupo") || mentorado.product_name?.toLowerCase().includes("decisões em contexto");
+  const isCheckup   = mentorado.product_name?.toLowerCase().includes("check-up") || mentorado.product_name?.toLowerCase().includes("checkup");
   const totalSessoes = mentorado.product_name?.includes("Travessia") ? 4 : 1;
   const sessoesFeit = sessoes.length;
   const progresso = Math.min(100, Math.round((sessoesFeit / totalSessoes) * 100));
+
+  // Grupo tier: simplified portal
+  if (isGrupo) {
+    return (
+      <div className="max-w-3xl mx-auto">
+        {isFirstAccess && <OnboardingBanner />}
+        <div className="mb-8">
+          <p className="text-[#1E88E5] text-xs font-semibold tracking-widest uppercase mb-1">Programa em Grupo</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a]">
+            Olá{mentorado.name ? `, ${mentorado.name.split(" ")[0]}` : ""}
+          </h1>
+          <p className="text-[#64748b] text-sm mt-1">{mentorado.product_name}</p>
+        </div>
+        <div className="bg-gradient-to-r from-[#0f172a] to-[#1e293b] rounded-2xl p-6 text-white border border-[#1E88E5]/20 mb-5">
+          <p className="font-extrabold text-base mb-1">Portal do Grupo em breve</p>
+          <p className="text-[#94a3b8] text-sm mb-4">
+            O espaço dedicado ao seu programa em grupo está sendo preparado. Por enquanto, use o WhatsApp para acompanhar os encontros.
+          </p>
+          <a
+            href="https://wa.me/5511999999999"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebe5b] text-white text-sm font-bold px-5 py-2.5 rounded-full transition-colors"
+          >
+            Acessar grupo no WhatsApp
+          </a>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Link href="/portal/canvas" className="flex items-center justify-between bg-[#F97316] hover:bg-[#EA6B00] text-white rounded-2xl p-5 transition group">
+            <div>
+              <p className="font-bold text-sm">Decision Canvas</p>
+              <p className="text-orange-100 text-xs mt-0.5">Estruture sua decisão de carreira.</p>
+            </div>
+            <span className="text-white text-lg group-hover:translate-x-1 transition-transform">→</span>
+          </Link>
+          <Link href="/portal/materiais" className="flex items-center justify-between bg-white border border-[#e2e8f0] hover:border-[#1E88E5]/40 rounded-2xl p-5 transition group">
+            <div>
+              <p className="font-bold text-sm text-[#0f172a]">Materiais</p>
+              <p className="text-[#64748b] text-xs mt-0.5">Recursos do programa.</p>
+            </div>
+            <span className="text-[#1E88E5] text-lg group-hover:translate-x-1 transition-transform">→</span>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -66,7 +114,9 @@ export default async function DashboardPage() {
 
       {/* Header */}
       <div className="mb-8">
-        <p className="text-[#1E88E5] text-xs font-semibold tracking-widest uppercase mb-1">Sua Travessia</p>
+        <p className="text-[#1E88E5] text-xs font-semibold tracking-widest uppercase mb-1">
+          {isCheckup ? "Check-up de Decisão" : "Sua Travessia"}
+        </p>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a]">
           Olá{mentorado.name ? `, ${mentorado.name.split(" ")[0]}` : ""}
         </h1>

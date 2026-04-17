@@ -141,7 +141,7 @@ export default async function PortalLayout({
 
       {/* Floating WhatsApp button */}
       <a
-        href="https://wa.me/5511999999999?text=Ol%C3%A1%2C+sou+seu+mentorado+e+gostaria+de+conversar."
+        href="https://wa.me/5511940347276?text=Ol%C3%A1%2C+sou+seu+mentorado+e+gostaria+de+conversar."
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebe5b] text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-lg transition-colors"

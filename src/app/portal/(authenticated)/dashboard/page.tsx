@@ -79,7 +79,7 @@ export default async function DashboardPage() {
             O espaço dedicado ao seu programa em grupo está sendo preparado. Por enquanto, use o WhatsApp para acompanhar os encontros.
           </p>
           <a
-            href="https://wa.me/5511999999999"
+            href="https://wa.me/5511940347276"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebe5b] text-white text-sm font-bold px-5 py-2.5 rounded-full transition-colors"

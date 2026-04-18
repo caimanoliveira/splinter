@@ -34,6 +34,17 @@ interface Marco {
   id: string; title: string; description: string | null
   order: number; is_achieved: boolean; achieved_at: string | null
 }
+interface EtapaRespostaRef { etapa_slug: string; status: string }
+interface MentoradoTrilha {
+  id: string; trilha_slug: string; assigned_at: string
+  started_at: string | null; completed_at: string | null
+  etapa_respostas?: EtapaRespostaRef[]
+}
+
+const TRILHAS_DISPONIVEIS: Array<{ slug: string; titulo: string }> = [
+  { slug: "preparacao-entrevistas", titulo: "Preparação para Entrevistas" },
+  { slug: "mapa-competencias", titulo: "Mapa de Competências" },
+]
 
 const statusColors: Record<string, string> = {
   active: "bg-emerald-100 text-emerald-700",
@@ -63,8 +74,12 @@ export default function MentoradoDetailPage() {
   const [materiais, setMateriais] = useState<MentoradoMaterial[]>([])
   const [avaliacoes, setAvaliacoes] = useState<AvaliacaoWithComp[]>([])
   const [marcos, setMarcos] = useState<Marco[]>([])
+  const [trilhas, setTrilhas] = useState<MentoradoTrilha[]>([])
+  const [trilhaSlug, setTrilhaSlug] = useState<string>("")
+  const [atribuindoTrilha, setAtribuindoTrilha] = useState(false)
+  const [trilhaError, setTrilhaError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<"sessoes" | "tarefas" | "materiais" | "avaliacoes" | "marcos">("sessoes")
+  const [activeTab, setActiveTab] = useState<"sessoes" | "tarefas" | "materiais" | "avaliacoes" | "marcos" | "trilhas">("sessoes")
   const [novoMarco, setNovoMarco] = useState({ title: "", description: "" })
   const [savingMarco, setSavingMarco] = useState(false)
   const [criandoAcesso, setCriandoAcesso] = useState(false)
@@ -77,13 +92,14 @@ export default function MentoradoDetailPage() {
     if (!id) return
     async function load() {
       setLoading(true)
-      const [m, s, t, mt, av, mk] = await Promise.all([
+      const [m, s, t, mt, av, mk, tr] = await Promise.all([
         supabase.from("mentorados").select("*").eq("id", id).single(),
         supabase.from("sessoes").select("*").eq("mentorado_id", id).order("date", { ascending: false }),
         supabase.from("tarefas").select("*").eq("mentorado_id", id).order("created_at", { ascending: false }),
         supabase.from("mentorado_materiais").select("*, material:materiais(*)").eq("mentorado_id", id).order("unlocked_at", { ascending: false }),
         supabase.from("avaliacoes_competencia").select("*, competencia:competencias(name)").eq("mentorado_id", id).order("assessed_at", { ascending: false }).limit(20),
         supabase.from("marcos").select("*").eq("mentorado_id", id).order("order", { ascending: true }),
+        supabase.from("mentorado_trilhas").select("id, trilha_slug, assigned_at, started_at, completed_at, etapa_respostas(etapa_slug, status)").eq("mentorado_id", id).order("assigned_at", { ascending: false }),
       ])
       setMentorado(m.data)
       setSessoes(s.data ?? [])
@@ -91,6 +107,7 @@ export default function MentoradoDetailPage() {
       setMateriais(mt.data ?? [])
       setAvaliacoes(av.data ?? [])
       setMarcos(mk.data ?? [])
+      setTrilhas((tr.data ?? []) as MentoradoTrilha[])
       setLoading(false)
     }
     load()
@@ -166,6 +183,39 @@ export default function MentoradoDetailPage() {
   async function handleDeleteMarco(marcoId: string) {
     await supabase.from("marcos").delete().eq("id", marcoId)
     setMarcos(prev => prev.filter(m => m.id !== marcoId))
+  }
+
+  async function handleAtribuirTrilha() {
+    if (!id || !trilhaSlug) return
+    setAtribuindoTrilha(true)
+    setTrilhaError(null)
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data, error } = await supabase.from("mentorado_trilhas").insert({
+      mentorado_id: id,
+      trilha_slug: trilhaSlug,
+      assigned_by: user?.id ?? null,
+    }).select("id, trilha_slug, assigned_at, started_at, completed_at").single()
+    if (error) {
+      setTrilhaError(error.code === "23505" ? "Trilha já atribuída." : error.message)
+    } else if (data) {
+      setTrilhas(prev => [{ ...(data as MentoradoTrilha), etapa_respostas: [] }, ...prev])
+      setTrilhaSlug("")
+    }
+    setAtribuindoTrilha(false)
+  }
+
+  async function handleRemoverTrilha(mt: MentoradoTrilha) {
+    setTrilhaError(null)
+    if (mt.started_at) {
+      setTrilhaError("Trilha já iniciada — não pode ser removida.")
+      return
+    }
+    const { error } = await supabase.from("mentorado_trilhas").delete().eq("id", mt.id)
+    if (error) {
+      setTrilhaError(error.message)
+      return
+    }
+    setTrilhas(prev => prev.filter(x => x.id !== mt.id))
   }
 
   if (loading) return <div className="text-center py-20 text-slate-400">Carregando…</div>
@@ -253,7 +303,7 @@ export default function MentoradoDetailPage() {
 
       {/* Tabs */}
       <div className="flex border-b border-slate-200 mb-6 gap-1">
-        {(["sessoes", "tarefas", "materiais", "avaliacoes", "marcos"] as const).map((tab) => (
+        {(["sessoes", "tarefas", "materiais", "avaliacoes", "marcos", "trilhas"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -263,9 +313,9 @@ export default function MentoradoDetailPage() {
                 : "border-transparent text-slate-500 hover:text-slate-700"
             }`}
           >
-            {tab === "sessoes" ? "Sessões" : tab === "tarefas" ? "Tarefas" : tab === "materiais" ? "Materiais" : tab === "avaliacoes" ? "Avaliações" : "Marcos"}
+            {tab === "sessoes" ? "Sessões" : tab === "tarefas" ? "Tarefas" : tab === "materiais" ? "Materiais" : tab === "avaliacoes" ? "Avaliações" : tab === "marcos" ? "Marcos" : "Trilhas"}
             <span className="ml-1.5 text-xs text-slate-400">
-              ({tab === "sessoes" ? sessoes.length : tab === "tarefas" ? tarefas.length : tab === "materiais" ? materiais.length : tab === "avaliacoes" ? avaliacoes.length : marcos.length})
+              ({tab === "sessoes" ? sessoes.length : tab === "tarefas" ? tarefas.length : tab === "materiais" ? materiais.length : tab === "avaliacoes" ? avaliacoes.length : tab === "marcos" ? marcos.length : trilhas.length})
             </span>
           </button>
         ))}
@@ -452,6 +502,79 @@ export default function MentoradoDetailPage() {
                   </button>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Trilhas */}
+      {activeTab === "trilhas" && (
+        <div className="flex flex-col gap-4">
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <p className="text-sm font-semibold text-slate-700 mb-3">Atribuir trilha</p>
+            <div className="flex gap-2">
+              <select
+                value={trilhaSlug}
+                onChange={e => setTrilhaSlug(e.target.value)}
+                className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">Selecione uma trilha</option>
+                {TRILHAS_DISPONIVEIS.filter(t => !trilhas.some(mt => mt.trilha_slug === t.slug)).map(t => (
+                  <option key={t.slug} value={t.slug}>{t.titulo}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleAtribuirTrilha}
+                disabled={atribuindoTrilha || !trilhaSlug}
+                className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+              >
+                <Plus className="h-4 w-4" /> {atribuindoTrilha ? "Atribuindo…" : "Atribuir"}
+              </button>
+            </div>
+            {trilhaError && (
+              <p className="text-xs text-red-600 mt-2">{trilhaError}</p>
+            )}
+          </div>
+
+          {trilhas.length === 0 ? (
+            <p className="text-slate-400 text-sm py-4 text-center">Nenhuma trilha atribuída.</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {trilhas.map(mt => {
+                const titulo = TRILHAS_DISPONIVEIS.find(t => t.slug === mt.trilha_slug)?.titulo ?? mt.trilha_slug
+                const respostas = mt.etapa_respostas ?? []
+                const done = respostas.filter(e => e.status === "done").length
+                const iniciada = !!mt.started_at
+                const concluida = !!mt.completed_at
+                return (
+                  <div key={mt.id} className="bg-white rounded-xl border border-slate-200 p-4 flex items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-900">{titulo}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {concluida
+                          ? `Concluída em ${new Date(mt.completed_at!).toLocaleDateString("pt-BR")}`
+                          : iniciada
+                          ? `Em andamento · ${done} etapa(s) concluída(s)`
+                          : "Não iniciada"}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Atribuída em {new Date(mt.assigned_at).toLocaleDateString("pt-BR")}
+                      </p>
+                    </div>
+                    {!iniciada && !concluida && (
+                      <button
+                        onClick={() => handleRemoverTrilha(mt)}
+                        className="text-slate-300 hover:text-red-400 transition-colors shrink-0"
+                        aria-label="Remover trilha"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>

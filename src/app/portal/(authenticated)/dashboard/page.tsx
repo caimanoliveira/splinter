@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase-server";
 import type { Mentorado, Tarefa, Sessao, Checkin, Marco } from "@/types/portal";
 import OnboardingBanner from "../_components/OnboardingBanner";
+import { getTrilhaEmAndamento } from "@/lib/trilhas/queries";
+import { DashboardTrilhaCard } from "@/components/trilhas/DashboardTrilhaCard";
 
 function formatDate(d: string | null) {
   if (!d) return "—";
@@ -48,6 +50,8 @@ export default async function DashboardPage() {
   const canvasCount  = canvasCountR.count ?? 0;
   const checkinCount = checkinCountR.count ?? 0;
   const isFirstAccess = canvasCount === 0 && checkinCount === 0;
+
+  const trilhaEmAndamento = await getTrilhaEmAndamento();
 
   const lastCheckin = checkins[0] ?? null;
   const pending = tarefas.filter(t => t.status !== "done");
@@ -224,6 +228,13 @@ export default async function DashboardPage() {
               ))}
             </ol>
           </div>
+        </div>
+      )}
+
+      {/* Trilha em andamento */}
+      {trilhaEmAndamento && (
+        <div className="mb-5">
+          <DashboardTrilhaCard data={trilhaEmAndamento} />
         </div>
       )}
 

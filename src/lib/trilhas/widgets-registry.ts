@@ -3,6 +3,7 @@ import type { Etapa, EtapaResposta, TrilhaSlug } from '@/types/portal';
 import ConteudoWidget from '@/components/trilhas/widgets/ConteudoWidget';
 import ChecklistWidget from '@/components/trilhas/widgets/ChecklistWidget';
 import MatrizWidget from '@/components/trilhas/widgets/MatrizWidget';
+import PlanoAcaoWidget from '@/components/trilhas/widgets/PlanoAcaoWidget';
 
 export interface WidgetProps {
   trilhaSlug: TrilhaSlug;
@@ -15,4 +16,5 @@ export const widgetRegistry: Record<string, ComponentType<WidgetProps>> = {
   conteudo: ConteudoWidget,
   checklist: ChecklistWidget,
   matriz: MatrizWidget,
+  plano_acao: PlanoAcaoWidget,
 };

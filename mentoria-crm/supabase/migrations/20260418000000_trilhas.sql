@@ -93,7 +93,8 @@ CREATE OR REPLACE FUNCTION submit_plano_acao(
   p_acoes JSONB -- [{competencia_id, descricao, prazo}]
 ) RETURNS JSONB
 LANGUAGE plpgsql
-SECURITY INVOKER
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_mentorado_id UUID;

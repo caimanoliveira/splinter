@@ -119,3 +119,52 @@ export interface Marco {
   achieved_at: string | null
   created_at: string
 }
+
+// ============ Trilhas ============
+
+export type EtapaTipo =
+  | 'conteudo'
+  | 'banco_perguntas'
+  | 'star_builder'
+  | 'checklist'
+  | 'matriz'
+  | 'plano_acao';
+
+export type EtapaStatus = 'pending' | 'in_progress' | 'done';
+
+export type TrilhaSlug = 'preparacao-entrevistas' | 'mapa-competencias';
+
+export interface Etapa {
+  slug: string;
+  titulo: string;
+  descricao: string;
+  tipo: EtapaTipo;
+  config: Record<string, unknown>;
+}
+
+export interface Trilha {
+  slug: TrilhaSlug;
+  titulo: string;
+  descricao: string;
+  etapas: Etapa[];
+}
+
+export interface MentoradoTrilha {
+  id: string;
+  mentorado_id: string;
+  trilha_slug: TrilhaSlug;
+  assigned_at: string;
+  assigned_by: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+export interface EtapaResposta {
+  id: string;
+  mentorado_trilha_id: string;
+  etapa_slug: string;
+  status: EtapaStatus;
+  resposta: Record<string, unknown> | null;
+  completed_at: string | null;
+  updated_at: string;
+}

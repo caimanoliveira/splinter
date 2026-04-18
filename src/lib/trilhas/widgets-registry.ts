@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 import type { Etapa, EtapaResposta, TrilhaSlug } from '@/types/portal';
 import ConteudoWidget from '@/components/trilhas/widgets/ConteudoWidget';
+import ChecklistWidget from '@/components/trilhas/widgets/ChecklistWidget';
 
 export interface WidgetProps {
   trilhaSlug: TrilhaSlug;
@@ -11,4 +12,5 @@ export interface WidgetProps {
 
 export const widgetRegistry: Record<string, ComponentType<WidgetProps>> = {
   conteudo: ConteudoWidget,
+  checklist: ChecklistWidget,
 };

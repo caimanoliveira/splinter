@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -16,8 +17,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useUser } from '@clerk/expo';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
+import { DatePickerInput } from '../../components/common/DatePickerInput';
 import { usePetStore } from '../../store/petStore';
-import { uploadFile } from '../../lib/storage';
+import { uploadFile, deleteFile } from '../../lib/storage';
 import { S } from '../../lib/strings';
 import type { PetsStackParamList, HealthRecordType } from '../../types';
 
@@ -46,18 +48,22 @@ export function AddRecordScreen({ navigation, route }: Props) {
   const [recordType, setRecordType] = useState<HealthRecordType>(existing?.record_type ?? 'consultation');
   const [description, setDescription] = useState(existing?.description ?? '');
   const [veterinarian, setVeterinarian] = useState(existing?.veterinarian ?? '');
-  const [recordDate, setRecordDate] = useState(
-    existing?.record_date ?? new Date().toISOString().split('T')[0] ?? '',
-  );
-  const [attachmentUris, setAttachmentUris] = useState<string[]>([]);
+  const [recordDate, setRecordDate] = useState<Date>(() => {
+    if (existing?.record_date) return new Date(existing.record_date);
+    return new Date();
+  });
+
+  // P0-4: existing attachments management
+  const [existingUrls, setExistingUrls] = useState<string[]>(existing?.attachment_urls ?? []);
+  const [removedUrls, setRemovedUrls] = useState<string[]>([]);
+  const [newAttachmentUris, setNewAttachmentUris] = useState<string[]>([]);
+
   const [saving, setSaving] = useState(false);
-  const [errors, setErrors] = useState<{ title?: string; recordDate?: string }>({});
+  const [errors, setErrors] = useState<{ title?: string }>({});
 
   function validate() {
     const e: typeof errors = {};
     if (!title.trim()) e.title = S.recordTitleRequired;
-    if (!recordDate) e.recordDate = S.recordDateRequired;
-    else if (!/^\d{4}-\d{2}-\d{2}$/.test(recordDate)) e.recordDate = 'Use o formato YYYY-MM-DD';
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -69,8 +75,13 @@ export function AddRecordScreen({ navigation, route }: Props) {
       quality: 0.8,
     });
     if (!result.canceled) {
-      setAttachmentUris((prev) => [...prev, ...result.assets.map((a) => a.uri)]);
+      setNewAttachmentUris((prev) => [...prev, ...result.assets.map((a) => a.uri)]);
     }
+  }
+
+  function removeExisting(url: string) {
+    setExistingUrls((prev) => prev.filter((u) => u !== url));
+    setRemovedUrls((prev) => [...prev, url]);
   }
 
   async function handleSave() {
@@ -78,16 +89,19 @@ export function AddRecordScreen({ navigation, route }: Props) {
     setSaving(true);
 
     try {
+      // Delete removed files from R2
+      for (const url of removedUrls) {
+        await deleteFile(url).catch(() => null);
+      }
+
+      // Upload new attachments
       const uploadedUrls: string[] = [];
-      for (const uri of attachmentUris) {
+      for (const uri of newAttachmentUris) {
         const url = await uploadFile({ folder: 'record-attachments', userId: user.id, localUri: uri });
         uploadedUrls.push(url);
       }
 
-      const allAttachments = [
-        ...(existing?.attachment_urls ?? []),
-        ...uploadedUrls,
-      ];
+      const finalUrls = [...existingUrls, ...uploadedUrls];
 
       if (recordId && existing) {
         await updateHealthRecord(
@@ -97,8 +111,8 @@ export function AddRecordScreen({ navigation, route }: Props) {
             record_type: recordType,
             description: description.trim() || null,
             veterinarian: veterinarian.trim() || null,
-            record_date: recordDate,
-            attachment_urls: allAttachments.length > 0 ? allAttachments : null,
+            record_date: recordDate.toISOString().slice(0, 10),
+            attachment_urls: finalUrls.length > 0 ? finalUrls : null,
           },
           petId,
           user.id,
@@ -110,8 +124,8 @@ export function AddRecordScreen({ navigation, route }: Props) {
           record_type: recordType,
           description: description.trim() || null,
           veterinarian: veterinarian.trim() || null,
-          record_date: recordDate,
-          attachment_urls: allAttachments.length > 0 ? allAttachments : null,
+          record_date: recordDate.toISOString().slice(0, 10),
+          attachment_urls: finalUrls.length > 0 ? finalUrls : null,
         }, user.id);
       }
       navigation.goBack();
@@ -144,14 +158,16 @@ export function AddRecordScreen({ navigation, route }: Props) {
         </ScrollView>
 
         <Input label={S.recordTitle} value={title} onChangeText={setTitle} placeholder={S.recordTitlePlaceholder} error={errors.title} />
-        <Input
+
+        <DatePickerInput
           label={S.recordDate}
           value={recordDate}
-          onChangeText={setRecordDate}
-          placeholder="2024-06-01"
-          keyboardType="numeric"
-          error={errors.recordDate}
+          onChange={setRecordDate}
+          mode="date"
+          placeholder={S.recordDatePlaceholder}
+          maximumDate={new Date()}
         />
+
         <Input label={S.recordVet} value={veterinarian} onChangeText={setVeterinarian} placeholder={S.recordVetPlaceholder} />
         <Input
           label={S.notes}
@@ -163,10 +179,27 @@ export function AddRecordScreen({ navigation, route }: Props) {
           style={styles.textArea}
         />
 
+        {/* P0-4: Existing attachments */}
+        {existingUrls.length > 0 ? (
+          <View style={styles.attachSection}>
+            <Text style={styles.label}>{S.existingAttachments}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {existingUrls.map((url) => (
+                <View key={url} style={styles.thumbWrap}>
+                  <Image source={{ uri: url }} style={styles.thumb} />
+                  <TouchableOpacity style={styles.removeThumb} onPress={() => removeExisting(url)}>
+                    <Ionicons name="close-circle" size={20} color="#F44336" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
+
         <TouchableOpacity style={styles.attachBtn} onPress={pickAttachment}>
           <Ionicons name="attach" size={20} color="#4CAF82" />
           <Text style={styles.attachBtnText}>
-            {attachmentUris.length > 0 ? S.addAttachmentsCount(attachmentUris.length) : S.addAttachments}
+            {newAttachmentUris.length > 0 ? S.addAttachmentsCount(newAttachmentUris.length) : S.addAttachments}
           </Text>
         </TouchableOpacity>
 
@@ -199,6 +232,10 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 13, color: '#555' },
   chipTextActive: { color: '#fff', fontWeight: '700' },
   textArea: { height: 100, textAlignVertical: 'top', paddingTop: 12 },
+  attachSection: { marginBottom: 16 },
+  thumbWrap: { position: 'relative', marginRight: 10 },
+  thumb: { width: 80, height: 80, borderRadius: 10 },
+  removeThumb: { position: 'absolute', top: -6, right: -6 },
   attachBtn: {
     flexDirection: 'row',
     alignItems: 'center',

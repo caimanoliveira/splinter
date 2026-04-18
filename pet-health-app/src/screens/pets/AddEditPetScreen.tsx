@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useUser } from '@clerk/expo';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
+import { DatePickerInput } from '../../components/common/DatePickerInput';
 import { usePetStore } from '../../store/petStore';
 import { uploadFile } from '../../lib/storage';
 import { S } from '../../lib/strings';
@@ -46,24 +47,23 @@ export function AddEditPetScreen({ navigation, route }: Props) {
   const [name, setName] = useState(existing?.name ?? '');
   const [species, setSpecies] = useState<Species>(existing?.species ?? 'dog');
   const [breed, setBreed] = useState(existing?.breed ?? '');
-  const [birthdate, setBirthdate] = useState(existing?.birthdate ?? '');
+  const [birthdate, setBirthdate] = useState<Date | null>(
+    existing?.birthdate ? new Date(existing.birthdate) : null,
+  );
   const [photoUri, setPhotoUri] = useState<string | null>(existing?.photo_url ?? null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [errors, setErrors] = useState<{ name?: string; birthdate?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string }>({});
 
   useEffect(() => {
-    if (petId && !activePet) {
-      fetchPet(petId);
+    if (petId && !activePet && user?.id) {
+      fetchPet(petId, user.id);
     }
-  }, [petId, activePet, fetchPet]);
+  }, [petId, activePet, fetchPet, user?.id]);
 
   function validate(): boolean {
     const e: typeof errors = {};
     if (!name.trim()) e.name = S.petNameRequired;
-    if (birthdate && !/^\d{4}-\d{2}-\d{2}$/.test(birthdate)) {
-      e.birthdate = 'Use o formato YYYY-MM-DD';
-    }
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -98,12 +98,14 @@ export function AddEditPetScreen({ navigation, route }: Props) {
         setUploading(false);
       }
 
+      const birthdateStr = birthdate ? birthdate.toISOString().slice(0, 10) : null;
+
       if (petId) {
         await updatePet(petId, {
           name: name.trim(),
           species,
           breed: breed.trim() || null,
-          birthdate: birthdate || null,
+          birthdate: birthdateStr,
           photo_url: photoUrl,
         }, user.id);
       } else {
@@ -111,7 +113,7 @@ export function AddEditPetScreen({ navigation, route }: Props) {
           name: name.trim(),
           species,
           breed: breed.trim() || null,
-          birthdate: birthdate || null,
+          birthdate: birthdateStr,
           photo_url: photoUrl,
         }, user.id);
         navigation.replace('PetDetail', { petId: newPet.id });
@@ -139,7 +141,7 @@ export function AddEditPetScreen({ navigation, route }: Props) {
           ) : (
             <View style={styles.photoPlaceholder}>
               <Ionicons name="camera-outline" size={32} color="#4CAF82" />
-              <Text style={styles.photoHint}>{photoUri ? S.petPhotoChange : S.petPhoto}</Text>
+              <Text style={styles.photoHint}>{S.petPhoto}</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -174,13 +176,13 @@ export function AddEditPetScreen({ navigation, route }: Props) {
           placeholder={S.petBreedPlaceholder}
         />
 
-        <Input
+        <DatePickerInput
           label={S.petBirthdate}
           value={birthdate}
-          onChangeText={setBirthdate}
-          placeholder="2021-03-15"
-          keyboardType="numeric"
-          error={errors.birthdate}
+          onChange={setBirthdate}
+          mode="date"
+          placeholder={S.petBirthdatePlaceholder}
+          maximumDate={new Date()}
         />
 
         <Button

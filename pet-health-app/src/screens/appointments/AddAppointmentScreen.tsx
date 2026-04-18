@@ -14,6 +14,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useUser } from '@clerk/expo';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
+import { DatePickerInput } from '../../components/common/DatePickerInput';
 import { useVetStore } from '../../store/vetStore';
 import { usePetStore } from '../../store/petStore';
 import { S } from '../../lib/strings';
@@ -42,10 +43,8 @@ export function AddAppointmentScreen({ navigation, route }: Props) {
   const [description, setDescription] = useState(existing?.description ?? '');
   const [selectedPetId, setSelectedPetId] = useState(existing?.pet_id ?? '');
   const [selectedVetId, setSelectedVetId] = useState(existing?.vet_id ?? '');
-  const [appointmentAt, setAppointmentAt] = useState(
-    existing?.appointment_at
-      ? existing.appointment_at.replace('T', ' ').slice(0, 16)
-      : '',
+  const [appointmentAt, setAppointmentAt] = useState<Date | null>(
+    existing?.appointment_at ? new Date(existing.appointment_at) : null,
   );
   const [status, setStatus] = useState<AppointmentStatus>(existing?.status ?? 'scheduled');
   const [location, setLocation] = useState(existing?.location ?? '');
@@ -62,18 +61,13 @@ export function AddAppointmentScreen({ navigation, route }: Props) {
     if (!title.trim()) e.title = S.appointmentTitleRequired;
     if (!selectedPetId) e.petId = S.appointmentPetRequired;
     if (!appointmentAt) e.appointmentAt = S.appointmentDateRequired;
-    else {
-      const d = new Date(appointmentAt.replace(' ', 'T'));
-      if (isNaN(d.getTime())) e.appointmentAt = 'Use o formato YYYY-MM-DD HH:MM';
-    }
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
   async function handleSave() {
-    if (!validate()) return;
+    if (!validate() || !appointmentAt) return;
     setSaving(true);
-    const isoAt = new Date(appointmentAt.replace(' ', 'T')).toISOString();
 
     try {
       if (appointmentId) {
@@ -82,7 +76,7 @@ export function AddAppointmentScreen({ navigation, route }: Props) {
           description: description.trim() || null,
           pet_id: selectedPetId,
           vet_id: selectedVetId || null,
-          appointment_at: isoAt,
+          appointment_at: appointmentAt.toISOString(),
           status,
           location: location.trim() || null,
         }, userId);
@@ -92,7 +86,7 @@ export function AddAppointmentScreen({ navigation, route }: Props) {
           description: description.trim() || null,
           pet_id: selectedPetId,
           vet_id: selectedVetId || null,
-          appointment_at: isoAt,
+          appointment_at: appointmentAt.toISOString(),
           status,
           location: location.trim() || null,
         }, userId);
@@ -148,12 +142,12 @@ export function AddAppointmentScreen({ navigation, route }: Props) {
           ))}
         </ScrollView>
 
-        <Input
+        <DatePickerInput
           label={S.appointmentDateTime}
           value={appointmentAt}
-          onChangeText={setAppointmentAt}
-          placeholder="2024-09-20 10:30"
-          keyboardType="numeric"
+          onChange={setAppointmentAt}
+          mode="datetime"
+          placeholder={S.appointmentDateTimePlaceholder}
           error={errors.appointmentAt}
         />
 

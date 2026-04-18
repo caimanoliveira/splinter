@@ -7,6 +7,7 @@ import * as Notifications from 'expo-notifications';
 
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { clerkTokenCache } from './src/lib/auth';
+import { navigationRef } from './src/lib/navigationRef';
 
 const CLERK_PUBLISHABLE_KEY = process.env['EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY'] ?? '';
 
@@ -30,9 +31,12 @@ export default function App() {
     notifListener.current = Notifications.addNotificationReceivedListener(
       (_n) => { /* update badge / in-app state here if needed */ },
     );
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(
-      (_r) => { /* deep-link into the relevant reminder/appointment */ },
-    );
+    responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as Record<string, unknown>;
+      if (data?.type === 'reminder' && navigationRef.isReady()) {
+        navigationRef.navigate('Main' as never);
+      }
+    });
     return () => {
       notifListener.current && Notifications.removeNotificationSubscription(notifListener.current);
       responseListener.current && Notifications.removeNotificationSubscription(responseListener.current);

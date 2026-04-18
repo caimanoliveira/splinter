@@ -24,7 +24,8 @@ echo "==> Fixing native package versions for SDK 54..."
   expo-auth-session \
   expo-web-browser \
   expo-linking \
-  expo-linear-gradient
+  expo-linear-gradient \
+  @react-native-community/datetimepicker
 
 echo "==> Starting Expo..."
 ./node_modules/.bin/expo start --clear

@@ -97,6 +97,10 @@ export function LoginScreen({ navigation }: Props) {
 
           <Button title={S.signInButton} onPress={handleLogin} loading={loading} style={styles.btn} />
 
+          <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} style={styles.forgotRow}>
+            <Text style={styles.forgotText}>{S.forgotPassword}</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity onPress={() => navigation.navigate('Register')} style={styles.linkRow}>
             <Text style={styles.linkText}>{S.noAccount}</Text>
           </TouchableOpacity>
@@ -123,6 +127,8 @@ const styles = StyleSheet.create({
   },
   heading: { fontSize: 22, fontWeight: '700', color: '#333', marginBottom: 20 },
   btn: { marginTop: 8 },
-  linkRow: { marginTop: 20, alignItems: 'center' },
+  forgotRow: { marginTop: 14, alignItems: 'center' },
+  forgotText: { fontSize: 13, color: '#9E9E9E' },
+  linkRow: { marginTop: 16, alignItems: 'center' },
   linkText: { fontSize: 14, color: '#4CAF82', fontWeight: '700' },
 });

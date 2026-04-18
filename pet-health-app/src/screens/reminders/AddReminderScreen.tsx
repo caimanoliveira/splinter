@@ -15,6 +15,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useUser } from '@clerk/expo';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
+import { DatePickerInput } from '../../components/common/DatePickerInput';
 import { useReminderStore } from '../../store/reminderStore';
 import { usePetStore } from '../../store/petStore';
 import { S } from '../../lib/strings';
@@ -45,10 +46,8 @@ export function AddReminderScreen({ navigation, route }: Props) {
   const [description, setDescription] = useState(existing?.description ?? '');
   const [reminderType, setReminderType] = useState<ReminderType>(existing?.reminder_type ?? 'vaccine');
   const [selectedPetId, setSelectedPetId] = useState(existing?.pet_id ?? initialPetId ?? '');
-  const [remindAt, setRemindAt] = useState(
-    existing?.remind_at
-      ? existing.remind_at.replace('T', ' ').slice(0, 16)
-      : '',
+  const [remindAt, setRemindAt] = useState<Date | null>(
+    existing?.remind_at ? new Date(existing.remind_at) : null,
   );
   const [isRecurring, setIsRecurring] = useState(existing?.is_recurring ?? false);
   const [recurrenceDays, setRecurrenceDays] = useState(
@@ -66,19 +65,13 @@ export function AddReminderScreen({ navigation, route }: Props) {
     if (!title.trim()) e.title = S.reminderTitleRequired;
     if (!selectedPetId) e.petId = S.reminderPetRequired;
     if (!remindAt) e.remindAt = S.reminderDateRequired;
-    else {
-      const d = new Date(remindAt.replace(' ', 'T'));
-      if (isNaN(d.getTime())) e.remindAt = 'Use o formato YYYY-MM-DD HH:MM';
-    }
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
   async function handleSave() {
-    if (!validate()) return;
+    if (!validate() || !remindAt) return;
     setSaving(true);
-
-    const isoRemindAt = new Date(remindAt.replace(' ', 'T')).toISOString();
 
     try {
       if (reminderId) {
@@ -87,7 +80,7 @@ export function AddReminderScreen({ navigation, route }: Props) {
           description: description.trim() || null,
           reminder_type: reminderType,
           pet_id: selectedPetId,
-          remind_at: isoRemindAt,
+          remind_at: remindAt.toISOString(),
           is_recurring: isRecurring,
           recurrence_days: isRecurring && recurrenceDays ? parseInt(recurrenceDays, 10) : null,
         }, userId);
@@ -97,7 +90,7 @@ export function AddReminderScreen({ navigation, route }: Props) {
           description: description.trim() || null,
           reminder_type: reminderType,
           pet_id: selectedPetId,
-          remind_at: isoRemindAt,
+          remind_at: remindAt.toISOString(),
           is_recurring: isRecurring,
           recurrence_days: isRecurring && recurrenceDays ? parseInt(recurrenceDays, 10) : null,
           is_completed: false,
@@ -150,12 +143,13 @@ export function AddReminderScreen({ navigation, route }: Props) {
           ))}
         </ScrollView>
 
-        <Input
+        <DatePickerInput
           label={S.reminderDateTime}
           value={remindAt}
-          onChangeText={setRemindAt}
-          placeholder="2024-09-15 09:00"
-          keyboardType="numeric"
+          onChange={setRemindAt}
+          mode="datetime"
+          placeholder={S.reminderDateTimePlaceholder}
+          minimumDate={new Date()}
           error={errors.remindAt}
         />
 

@@ -20,6 +20,7 @@ interface ReminderState {
   updateReminder: (id: string, updates: Partial<Reminder>, userId: string) => Promise<void>;
   deleteReminder: (id: string, userId: string) => Promise<void>;
   markCompleted: (id: string, userId: string) => Promise<void>;
+  rescheduleRecurringReminder: (id: string, userId: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -53,6 +54,7 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
         title: reminder.title,
         body: reminder.description ?? 'Pet health reminder',
         triggerDate: new Date(reminder.remind_at),
+        data: { type: 'reminder' }, // reminderId filled after insert
       });
     } catch (e) {
       console.warn('[Reminders] Could not schedule local notification', e);
@@ -73,12 +75,28 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
         RETURNING *
       `;
 
-      // Re-fetch with pet join
+      const insertedId = (rows[0] as { id: string }).id;
+
+      // Reschedule with correct reminderId in data payload
+      if (localNotificationId) {
+        await cancelLocalNotification(localNotificationId).catch(() => null);
+        const newId = await scheduleLocalNotification({
+          title: reminder.title,
+          body: reminder.description ?? 'Pet health reminder',
+          triggerDate: new Date(reminder.remind_at),
+          data: { type: 'reminder', reminderId: insertedId },
+        }).catch(() => null);
+        if (newId) {
+          await sql`UPDATE reminders SET local_notification_id = ${newId} WHERE id = ${insertedId}`;
+          localNotificationId = newId;
+        }
+      }
+
       const withPet = await sql`
         SELECT r.*, row_to_json(p.*) AS pet
         FROM reminders r
         LEFT JOIN pets p ON p.id = r.pet_id
-        WHERE r.id = ${(rows[0] as { id: string }).id}
+        WHERE r.id = ${insertedId}
       `;
 
       set((s) => ({ reminders: [withPet[0] as Reminder, ...s.reminders], loading: false }));
@@ -94,7 +112,6 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   updateReminder: async (id, updates, userId) => {
     const existing = get().reminders.find((r) => r.id === id);
 
-    // Reschedule notification if time changed
     let newNotifId = existing?.local_notification_id ?? null;
     if (updates.remind_at && existing?.local_notification_id) {
       await cancelLocalNotification(existing.local_notification_id).catch(() => null);
@@ -103,6 +120,7 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
           title: updates.title ?? existing.title,
           body: updates.description ?? existing.description ?? '',
           triggerDate: new Date(updates.remind_at),
+          data: { type: 'reminder', reminderId: id },
         });
       } catch {
         newNotifId = null;
@@ -144,8 +162,58 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
     set((s) => ({ reminders: s.reminders.filter((r) => r.id !== id) }));
   },
 
+  // P0-3: markCompleted reschedules recurring reminders instead of just flagging done
   markCompleted: async (id, userId) => {
-    await get().updateReminder(id, { is_completed: true }, userId);
+    const reminder = get().reminders.find((r) => r.id === id);
+    if (reminder?.is_recurring && reminder.recurrence_days) {
+      await get().rescheduleRecurringReminder(id, userId);
+    } else {
+      await get().updateReminder(id, { is_completed: true }, userId);
+    }
+  },
+
+  // P0-3: Calculate next occurrence and reschedule
+  rescheduleRecurringReminder: async (id, userId) => {
+    const reminder = get().reminders.find((r) => r.id === id);
+    if (!reminder || !reminder.recurrence_days) return;
+
+    const nextDate = new Date(reminder.remind_at);
+    nextDate.setDate(nextDate.getDate() + reminder.recurrence_days);
+
+    if (reminder.local_notification_id) {
+      await cancelLocalNotification(reminder.local_notification_id).catch(() => null);
+    }
+
+    let newNotifId: string | null = null;
+    try {
+      newNotifId = await scheduleLocalNotification({
+        title: reminder.title,
+        body: reminder.description ?? '',
+        triggerDate: nextDate,
+        data: { type: 'reminder', reminderId: id },
+      });
+    } catch {
+      console.warn('[Reminders] Could not reschedule recurring notification');
+    }
+
+    await sql`
+      UPDATE reminders SET
+        remind_at             = ${nextDate.toISOString()},
+        is_completed          = false,
+        local_notification_id = ${newNotifId},
+        updated_at            = NOW()
+      WHERE id = ${id} AND owner_id = ${userId}
+    `;
+
+    const withPet = await sql`
+      SELECT r.*, row_to_json(p.*) AS pet
+      FROM reminders r LEFT JOIN pets p ON p.id = r.pet_id
+      WHERE r.id = ${id}
+    `;
+
+    set((s) => ({
+      reminders: s.reminders.map((r) => (r.id === id ? (withPet[0] as Reminder) : r)),
+    }));
   },
 
   clearError: () => set({ error: null }),

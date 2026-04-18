@@ -44,6 +44,19 @@ export default function NovaSessaoPage() {
       return
     }
 
+    // Fire & forget — email não bloqueia navegação
+    fetch('/api/enviar-resumo-sessao', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mentorado_id: id,
+        date: form.date,
+        summary: form.summary || null,
+        decisions: form.decisions || null,
+        next_steps: form.next_steps || null,
+      }),
+    }).catch(() => { /* silently ignore */ })
+
     router.push(`/mentorados/${id}`)
   }
 

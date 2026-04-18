@@ -12,6 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatCurrency } from "@/lib/utils"
 import type { Stage, Lead, Meeting } from "@/types"
 
+interface MentoradoSaude {
+  id: string
+  name: string
+  email: string
+  diasSemCheckin: number | null
+  tarefasAtrasadas: number
+}
+
 interface Metrics {
   totalLeads: number
   totalProposalValue: number
@@ -19,6 +27,7 @@ interface Metrics {
   wonCount: number
   leadsByStage: { stage: Stage; count: number; value: number }[]
   upcomingMeetings: (Meeting & { lead: { name: string } })[]
+  mentoradosSaude: MentoradoSaude[]
 }
 
 export default function DashboardPage() {
@@ -27,16 +36,49 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const load = async () => {
-      const [{ data: stages }, { data: leads }, { data: meetings }] = await Promise.all([
+      const today = new Date().toISOString().split("T")[0]
+      const [
+        { data: stages },
+        { data: leads },
+        { data: meetings },
+        { data: mentoradosAtivos },
+        { data: todosCheckins },
+        { data: tarefasAtrasadas },
+      ] = await Promise.all([
         supabase.from("stages").select("*").order("order"),
         supabase.from("leads").select("*, stage:stages(*)"),
-        supabase
-          .from("meetings")
-          .select("*, lead:leads(name)")
-          .gte("date", new Date().toISOString().split("T")[0])
-          .order("date")
-          .limit(10),
+        supabase.from("meetings").select("*, lead:leads(name)").gte("date", today).order("date").limit(10),
+        supabase.from("mentorados").select("id, name, email").eq("status", "active"),
+        supabase.from("checkins").select("mentorado_id, created_at").order("created_at", { ascending: false }),
+        supabase.from("tarefas").select("mentorado_id").eq("status", "pending").lt("due_date", today),
       ])
+
+      // Latest checkin per mentorado
+      const latestCheckinPor: Record<string, string> = {}
+      for (const c of (todosCheckins ?? [])) {
+        if (!latestCheckinPor[c.mentorado_id]) latestCheckinPor[c.mentorado_id] = c.created_at
+      }
+
+      // Overdue tasks count per mentorado
+      const atrasadasPor: Record<string, number> = {}
+      for (const t of (tarefasAtrasadas ?? [])) {
+        atrasadasPor[t.mentorado_id] = (atrasadasPor[t.mentorado_id] ?? 0) + 1
+      }
+
+      const nowMs = Date.now()
+      const mentoradosSaude: MentoradoSaude[] = (mentoradosAtivos ?? []).map((m) => {
+        const ultimo = latestCheckinPor[m.id]
+        const diasSemCheckin = ultimo
+          ? Math.floor((nowMs - new Date(ultimo).getTime()) / 86_400_000)
+          : null
+        return {
+          id: m.id,
+          name: m.name,
+          email: m.email,
+          diasSemCheckin,
+          tarefasAtrasadas: atrasadasPor[m.id] ?? 0,
+        }
+      }).sort((a, b) => (b.diasSemCheckin ?? 999) - (a.diasSemCheckin ?? 999))
 
       if (!stages || !leads) { setLoading(false); return }
 
@@ -61,6 +103,7 @@ export default function DashboardPage() {
         wonCount,
         leadsByStage,
         upcomingMeetings: (meetings || []) as (Meeting & { lead: { name: string } })[],
+        mentoradosSaude,
       })
       setLoading(false)
     }
@@ -196,6 +239,61 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {/* Saúde dos Mentorados */}
+      <div className="mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-indigo-500" />
+              Saúde dos Mentorados
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {metrics.mentoradosSaude.length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-6">Nenhum mentorado ativo.</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {metrics.mentoradosSaude.map((m) => {
+                  const alerta = m.diasSemCheckin === null || m.diasSemCheckin > 7
+                  return (
+                    <Link
+                      key={m.id}
+                      href={`/mentorados/${m.id}`}
+                      className={`flex items-center gap-4 px-4 py-3 rounded-xl border transition-colors hover:bg-slate-50 ${alerta ? "border-red-200 bg-red-50" : "border-slate-100"}`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-900 truncate">{m.name}</p>
+                        <p className="text-xs text-slate-500 truncate">{m.email}</p>
+                      </div>
+                      <div className="flex items-center gap-4 shrink-0 text-right">
+                        {m.tarefasAtrasadas > 0 && (
+                          <div>
+                            <p className="text-xs font-bold text-orange-600">{m.tarefasAtrasadas}</p>
+                            <p className="text-[10px] text-slate-400">atrasadas</p>
+                          </div>
+                        )}
+                        <div>
+                          <p className={`text-xs font-bold ${alerta ? "text-red-600" : "text-slate-700"}`}>
+                            {m.diasSemCheckin === null ? "Nunca" : `${m.diasSemCheckin}d`}
+                          </p>
+                          <p className="text-[10px] text-slate-400">último check-in</p>
+                        </div>
+                        {alerta && <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />}
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+            <div className="mt-4 pt-4 border-t border-slate-100">
+              <Link href="/mentorados" className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors">
+                Ver todos os mentorados <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

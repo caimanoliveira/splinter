@@ -17,6 +17,66 @@ const scoreLabels: Record<number, string> = {
   10: "Excepcional",
 };
 
+function HistoricoLinhaChart({ competencias, avaliacoes }: { competencias: Competencia[]; avaliacoes: AvaliacaoCompetencia[] }) {
+  const W = 300; const H = 60; const PAD = 4;
+
+  const toX = (i: number, n: number) => PAD + (i / Math.max(n - 1, 1)) * (W - PAD * 2);
+  const toY = (s: number) => PAD + ((10 - s) / 9) * (H - PAD * 2);
+
+  const series = competencias.map((comp) => {
+    const points = avaliacoes
+      .filter((a) => a.competencia_id === comp.id)
+      .sort((a, b) => a.assessed_at.localeCompare(b.assessed_at))
+      .map((a) => ({
+        date: new Date(a.assessed_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }),
+        score: a.score,
+      }));
+    return { name: comp.name, points };
+  }).filter((s) => s.points.length >= 2);
+
+  if (series.length === 0) return null;
+
+  return (
+    <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-sm p-5 mb-6">
+      <div className="mb-4">
+        <p className="font-bold text-[#0f172a] text-sm">Histórico por Competência</p>
+        <p className="text-[#64748b] text-xs mt-0.5">Evolução completa ao longo das avaliações</p>
+      </div>
+      <div className="flex flex-col gap-5">
+        {series.map(({ name, points }) => {
+          const n = points.length;
+          const delta = points[n - 1].score - points[0].score;
+          const polyPoints = points.map((p, i) => `${toX(i, n)},${toY(p.score)}`).join(" ");
+          return (
+            <div key={name}>
+              <div className="flex justify-between items-center mb-1">
+                <p className="text-xs text-[#475569] font-medium truncate flex-1 pr-2">{name}</p>
+                <span className={`text-xs font-bold shrink-0 ${delta > 0 ? "text-green-600" : delta < 0 ? "text-red-500" : "text-[#94a3b8]"}`}>
+                  {delta > 0 ? `+${delta}` : delta === 0 ? "=" : delta}
+                </span>
+              </div>
+              <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 48 }} aria-hidden="true">
+                {[1, 5, 10].map((s) => (
+                  <line key={s} x1={PAD} y1={toY(s)} x2={W - PAD} y2={toY(s)} stroke="#f1f5f9" strokeWidth={1} />
+                ))}
+                <polyline points={polyPoints} fill="none" stroke="#1E88E5" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                {points.map((p, i) => (
+                  <circle key={i} cx={toX(i, n)} cy={toY(p.score)} r={3}
+                    fill={i === n - 1 ? "#1E88E5" : "white"} stroke="#1E88E5" strokeWidth={2} />
+                ))}
+              </svg>
+              <div className="flex justify-between text-[9px] text-[#94a3b8] mt-0.5">
+                <span>{points[0].date}</span>
+                <span>{points[n - 1].date}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function EvolucaoChart({ competencias, avaliacoes }: { competencias: Competencia[]; avaliacoes: AvaliacaoCompetencia[] }) {
   const data = competencias.map((comp) => {
     const history = avaliacoes
@@ -190,6 +250,7 @@ export default function AvaliacaoPage() {
       </div>
 
       <EvolucaoChart competencias={competencias} avaliacoes={avaliacoes} />
+      <HistoricoLinhaChart competencias={competencias} avaliacoes={avaliacoes} />
 
       {competencias.length === 0 ? (
         <div className="bg-white rounded-2xl border border-[#e2e8f0] p-10 text-center">

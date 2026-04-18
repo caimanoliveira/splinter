@@ -56,6 +56,12 @@ function NavIcon({ name }: { name: string }) {
           <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
       );
+    case "users":
+      return (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      );
     default:
       return (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
@@ -74,6 +80,41 @@ export default async function PortalLayout({
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect("/portal/login");
+
+  // Fetch notification counts
+  const { data: mentorado } = await supabase
+    .from("mentorados")
+    .select("id, product_name")
+    .eq("user_id", user.id)
+    .single();
+
+  const mid = mentorado?.id;
+  const isGrupo = !!(
+    mentorado?.product_name?.toLowerCase().includes("grupo") ||
+    mentorado?.product_name?.toLowerCase().includes("decisões em contexto")
+  );
+  const badges: Record<string, number> = {};
+
+  const navItemsFinal = isGrupo
+    ? [...navItems, { href: "/portal/grupo", label: "Grupo", icon: "users" }]
+    : navItems;
+
+  if (mid) {
+    const [tarefasRes, materiaisRes] = await Promise.all([
+      supabase
+        .from("tarefas")
+        .select("id", { count: "exact", head: true })
+        .eq("mentorado_id", mid)
+        .neq("status", "done"),
+      supabase
+        .from("mentorado_materiais")
+        .select("id", { count: "exact", head: true })
+        .eq("mentorado_id", mid)
+        .is("seen_at", null),
+    ]);
+    if ((tarefasRes.count ?? 0) > 0) badges["/portal/tarefas"] = tarefasRes.count!;
+    if ((materiaisRes.count ?? 0) > 0) badges["/portal/materiais"] = materiaisRes.count!;
+  }
 
   async function signOut() {
     "use server";
@@ -104,7 +145,7 @@ export default async function PortalLayout({
       {/* Sidebar — desktop */}
       <aside className="hidden sm:flex fixed left-0 top-14 bottom-0 w-56 bg-white border-r border-[#e2e8f0] flex-col pt-4 z-40">
         <nav className="flex-1 px-3 flex flex-col gap-1">
-          {navItems.map(({ href, label, icon }) => (
+          {navItemsFinal.map(({ href, label, icon }) => (
             <Link
               key={href}
               href={href}
@@ -112,6 +153,11 @@ export default async function PortalLayout({
             >
               <NavIcon name={icon} />
               {label}
+              {badges[href] ? (
+                <span className="ml-auto min-w-[18px] h-[18px] rounded-full bg-[#1E88E5] text-white text-[10px] font-bold flex items-center justify-center px-1">
+                  {badges[href] > 9 ? "9+" : badges[href]}
+                </span>
+              ) : null}
             </Link>
           ))}
         </nav>
@@ -127,13 +173,16 @@ export default async function PortalLayout({
 
       {/* Bottom nav — mobile */}
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#e2e8f0] flex z-50" aria-label="Navegação principal">
-        {navItems.map(({ href, label, icon }) => (
+        {navItemsFinal.map(({ href, label, icon }) => (
           <Link
             key={href}
             href={href}
-            className="flex-1 flex flex-col items-center gap-1 py-2.5 text-[#64748b] hover:text-[#1E88E5] transition-colors"
+            className="relative flex-1 flex flex-col items-center gap-1 py-2.5 text-[#64748b] hover:text-[#1E88E5] transition-colors"
           >
             <NavIcon name={icon} />
+            {badges[href] ? (
+              <span className="absolute top-1.5 right-[calc(50%-14px)] w-2 h-2 rounded-full bg-[#1E88E5]" />
+            ) : null}
             <span className="text-[10px] font-medium">{label}</span>
           </Link>
         ))}

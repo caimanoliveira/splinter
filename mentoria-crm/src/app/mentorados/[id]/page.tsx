@@ -70,6 +70,8 @@ export default function MentoradoDetailPage() {
   const [criandoAcesso, setCriandoAcesso] = useState(false)
   const [acessoStatus, setAcessoStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [acessoError, setAcessoError] = useState<string | null>(null)
+  const [concluindo, setConcluindo] = useState(false)
+  const [concluido, setConcluido] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -119,6 +121,21 @@ export default function MentoradoDetailPage() {
       setAcessoStatus('success')
     }
     setCriandoAcesso(false)
+  }
+
+  async function handleConcluir() {
+    if (!mentorado) return
+    setConcluindo(true)
+    const res = await fetch('/api/concluir-mentoria', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mentorado_id: mentorado.id, email: mentorado.email, name: mentorado.name }),
+    })
+    if (res.ok) {
+      setConcluido(true)
+      setMentorado(prev => prev ? { ...prev, status: 'completed' } : null)
+    }
+    setConcluindo(false)
   }
 
   async function handleAddMarco() {
@@ -189,6 +206,15 @@ export default function MentoradoDetailPage() {
         >
           <Plus className="h-4 w-4" /> Nova Tarefa
         </Link>
+        {mentorado.status !== 'completed' && (
+          <button
+            onClick={handleConcluir}
+            disabled={concluindo || concluido}
+            className="flex items-center gap-1.5 bg-slate-700 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+          >
+            {concluindo ? 'Concluindo…' : concluido ? '✓ Concluída' : 'Concluir mentoria'}
+          </button>
+        )}
         <button
           onClick={handleCriarAcesso}
           disabled={criandoAcesso || acessoStatus === 'success'}

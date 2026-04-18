@@ -60,6 +60,7 @@ export default async function DashboardPage() {
   const totalSessoes = mentorado.product_name?.includes("Travessia") ? 4 : 1;
   const sessoesFeit = sessoes.length;
   const progresso = Math.min(100, Math.round((sessoesFeit / totalSessoes) * 100));
+  const isApproachingEnd = !isGrupo && !isCheckup && sessoesFeit >= totalSessoes - 1 && sessoesFeit > 0;
 
   // Grupo tier: simplified portal
   if (isGrupo) {
@@ -183,6 +184,28 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      {/* Banner de continuidade — última ou penúltima sessão */}
+      {isApproachingEnd && (
+        <div className="bg-gradient-to-r from-[#F97316] to-[#EA6B00] rounded-2xl p-5 mb-5 text-white">
+          <p className="font-extrabold text-base mb-1">
+            {sessoesFeit >= totalSessoes ? "Sua Travessia chegou ao fim 🎯" : "Você está na reta final da Travessia"}
+          </p>
+          <p className="text-orange-100 text-sm mb-4">
+            {sessoesFeit >= totalSessoes
+              ? "Foi uma jornada incrível. Quer continuar evoluindo com método?"
+              : "Sua última sessão está chegando. Quer continuar a jornada?"}
+          </p>
+          <a
+            href={`https://wa.me/5511940347276?text=${encodeURIComponent("Olá! Estou chegando ao fim da minha Travessia e gostaria de conversar sobre continuidade.")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-white text-[#F97316] font-bold text-sm px-5 py-2.5 rounded-full hover:bg-orange-50 transition-colors"
+          >
+            Conversar sobre continuidade →
+          </a>
+        </div>
+      )}
+
       {/* Marcos da travessia */}
       {marcos.length > 0 && (
         <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-sm mb-5">
@@ -259,7 +282,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* CTAs rápidos */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
         <Link
           href="/portal/checkin"
           className="flex items-center justify-between bg-[#0f172a] hover:bg-[#1e293b] text-white rounded-2xl p-5 transition group"
@@ -281,6 +304,18 @@ export default async function DashboardPage() {
           <span className="text-white text-lg group-hover:translate-x-1 transition-transform">→</span>
         </Link>
       </div>
+
+      {/* Exportar relatório */}
+      <a
+        href={`/api/exportar-pdf?mentorado_id=${mid}`}
+        download="relatorio-mentoria.pdf"
+        className="flex items-center justify-center gap-2 bg-white border border-[#e2e8f0] hover:border-[#1E88E5]/40 hover:text-[#0f172a] text-[#475569] rounded-2xl p-4 transition text-sm font-semibold"
+      >
+        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        Exportar relatório em PDF
+      </a>
     </div>
   );
 }

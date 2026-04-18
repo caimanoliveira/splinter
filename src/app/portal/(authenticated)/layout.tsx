@@ -9,12 +9,13 @@ export const metadata: Metadata = {
 };
 
 const navItems = [
-  { href: "/portal/dashboard", label: "Início",    icon: "grid"    },
-  { href: "/portal/canvas",    label: "Canvas",    icon: "canvas"  },
-  { href: "/portal/checkin",   label: "Check-in",  icon: "pulse"   },
-  { href: "/portal/tarefas",   label: "Tarefas",   icon: "check"   },
-  { href: "/portal/materiais", label: "Materiais", icon: "book"    },
-  { href: "/portal/perfil",    label: "Perfil",    icon: "user"    },
+  { href: "/portal/dashboard", label: "Início",    icon: "grid"      },
+  { href: "/portal/canvas",    label: "Canvas",    icon: "canvas"    },
+  { href: "/portal/trilhas",   label: "Trilhas",   icon: "book-open" },
+  { href: "/portal/checkin",   label: "Check-in",  icon: "pulse"     },
+  { href: "/portal/tarefas",   label: "Tarefas",   icon: "check"     },
+  { href: "/portal/materiais", label: "Materiais", icon: "book"      },
+  { href: "/portal/perfil",    label: "Perfil",    icon: "user"      },
 ];
 
 function NavIcon({ name }: { name: string }) {
@@ -30,6 +31,12 @@ function NavIcon({ name }: { name: string }) {
       return (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      );
+    case "book-open":
+      return (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 006.5 22H20v-5H6.5A2.5 2.5 0 004 19.5zM4 19.5V5a2 2 0 012-2h10a2 2 0 012 2v12" />
         </svg>
       );
     case "canvas":

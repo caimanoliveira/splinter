@@ -58,7 +58,9 @@ CREATE POLICY mentorado_trilhas_select ON mentorado_trilhas
   FOR SELECT USING (mentorado_id = get_mentorado_id());
 
 CREATE POLICY mentorado_trilhas_update_started ON mentorado_trilhas
-  FOR UPDATE USING (mentorado_id = get_mentorado_id());
+  FOR UPDATE
+  USING (mentorado_id = get_mentorado_id())
+  WITH CHECK (mentorado_id = get_mentorado_id());
 
 -- etapa_respostas: mentorado lê/escreve as suas (via join com mentorado_trilhas)
 CREATE POLICY etapa_respostas_select ON etapa_respostas
@@ -76,7 +78,13 @@ CREATE POLICY etapa_respostas_insert ON etapa_respostas
   );
 
 CREATE POLICY etapa_respostas_update ON etapa_respostas
-  FOR UPDATE USING (
+  FOR UPDATE
+  USING (
+    mentorado_trilha_id IN (
+      SELECT id FROM mentorado_trilhas WHERE mentorado_id = get_mentorado_id()
+    )
+  )
+  WITH CHECK (
     mentorado_trilha_id IN (
       SELECT id FROM mentorado_trilhas WHERE mentorado_id = get_mentorado_id()
     )

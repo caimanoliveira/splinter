@@ -11,7 +11,7 @@ interface Config {
 }
 
 export default function ChecklistWidget({ trilhaSlug, etapa, resposta }: WidgetProps) {
-  const cfg = etapa.config as Config;
+  const cfg = etapa.config as unknown as Config;
   const initial = (resposta?.resposta ?? {}) as {
     marcados?: string[];
     inputs?: Record<string, string>;

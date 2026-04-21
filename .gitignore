@@ -151,3 +151,5 @@ node_modules/
 .env.local
 .env.*.local
 .vercel
+
+tsconfig.tsbuildinfo

@@ -44,7 +44,7 @@ function AvaliacaoView({ trilhaSlug, etapa, resposta }: WidgetProps) {
         trilhaSlug,
         etapaSlug: etapa.slug,
         resposta: { matriz_slug: matrizSlug, niveis_atuais: niveisAtuais, niveis_alvo: niveisAlvo },
-      }).catch(() => {});
+      }).catch((e) => console.error('[auto-save]', e));
     }, 800);
     return () => clearTimeout(timer);
   }, [matrizSlug, niveisAtuais, niveisAlvo, done, trilhaSlug, etapa.slug]);

@@ -28,7 +28,7 @@ export default function StarBuilderWidget({ trilhaSlug, etapa, resposta, context
   useEffect(() => {
     if (done) return;
     const timer = setTimeout(() => {
-      void saveResposta({ trilhaSlug, etapaSlug: etapa.slug, resposta: { stars } }).catch(() => {});
+      void saveResposta({ trilhaSlug, etapaSlug: etapa.slug, resposta: { stars } }).catch((e) => console.error('[auto-save]', e));
     }, 1500);
     return () => clearTimeout(timer);
   }, [stars, done, trilhaSlug, etapa.slug]);

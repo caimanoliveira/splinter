@@ -30,7 +30,7 @@ export default function ChecklistWidget({ trilhaSlug, etapa, resposta }: WidgetP
         trilhaSlug,
         etapaSlug: etapa.slug,
         resposta: { marcados, inputs },
-      }).catch(() => {});
+      }).catch((e) => console.error('[auto-save]', e));
     }, 800);
     return () => clearTimeout(timer);
   }, [marcados, inputs, trilhaSlug, etapa.slug, done]);

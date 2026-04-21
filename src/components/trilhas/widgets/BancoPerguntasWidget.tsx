@@ -33,7 +33,7 @@ export default function BancoPerguntasWidget({ trilhaSlug, etapa, resposta }: Wi
     const novo = favoritas.includes(id) ? favoritas.filter((x) => x !== id) : [...favoritas, id];
     setFavoritas(novo);
     if (!done) {
-      void saveResposta({ trilhaSlug, etapaSlug: etapa.slug, resposta: { favoritas: novo } }).catch(() => {});
+      void saveResposta({ trilhaSlug, etapaSlug: etapa.slug, resposta: { favoritas: novo } }).catch((e) => console.error('[auto-save]', e));
     }
   };
 

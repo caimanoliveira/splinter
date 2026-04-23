@@ -4,8 +4,9 @@
 
 At the start of every session, read all files in the `memory/` directory before doing anything else. They capture durable context that outlives a single conversation:
 
+- @memory/personality.md — how you are expected to think, communicate, and decide while working on this project. Treat this as your default voice and disposition.
 - @memory/user.md — stable facts about the primary user.
-- @memory/preferences.md — coding style, workflow, and communication preferences to honor.
+- @memory/preferences.md — coding style, workflow, and communication preferences to honor. These override `personality.md` when they conflict.
 - @memory/people.md — people involved in the project and how to interact with them.
 - @memory/decisions.md — technical and product decisions already made; do not relitigate without reason.
 

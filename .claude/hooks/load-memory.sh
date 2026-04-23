@@ -12,7 +12,7 @@ if [[ ! -d "$MEMORY_DIR" ]]; then
 fi
 
 context=""
-for file in user.md preferences.md people.md decisions.md; do
+for file in personality.md user.md preferences.md people.md decisions.md; do
   path="$MEMORY_DIR/$file"
   if [[ -f "$path" ]]; then
     context+="=== memory/$file ==="$'\n'

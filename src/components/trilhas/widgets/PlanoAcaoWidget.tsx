@@ -28,18 +28,35 @@ export default function PlanoAcaoWidget({ trilhaSlug, etapa, resposta, contextoT
     niveis_alvo?: Record<string, number>;
   } | null;
 
-  const topGaps = fonteResposta?.matriz_slug
-    ? getMatriz(fonteResposta.matriz_slug).competencias
-        .map((c) => ({
-          competencia: c,
-          gap: (fonteResposta.niveis_alvo?.[c.id] ?? 0) - (fonteResposta.niveis_atuais?.[c.id] ?? 0),
-        }))
-        .filter((x) => x.gap > 0)
-        .sort((a, b) => b.gap - a.gap)
-        .slice(0, cfg.n_acoes)
-    : [];
-
   const inTwoWeeks = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  const topGaps = fonteResposta?.matriz_slug
+    ? (() => {
+        const competencias = getMatriz(fonteResposta.matriz_slug!).competencias;
+        const withGap = competencias
+          .map((c) => ({
+            competencia: c,
+            gap: (fonteResposta.niveis_alvo?.[c.id] ?? 0) - (fonteResposta.niveis_atuais?.[c.id] ?? 0),
+          }))
+          .filter((x) => x.gap > 0)
+          .sort((a, b) => b.gap - a.gap)
+          .slice(0, cfg.n_acoes);
+        // fallback: use first N competencias when there are no positive gaps
+        if (withGap.length === 0) {
+          return competencias.slice(0, cfg.n_acoes).map((c) => ({ competencia: c, gap: 0 }));
+        }
+        // pad with remaining competencias if fewer gaps than n_acoes
+        if (withGap.length < cfg.n_acoes) {
+          const used = new Set(withGap.map((x) => x.competencia.id));
+          const extras = competencias
+            .filter((c) => !used.has(c.id))
+            .slice(0, cfg.n_acoes - withGap.length)
+            .map((c) => ({ competencia: c, gap: 0 }));
+          return [...withGap, ...extras];
+        }
+        return withGap;
+      })()
+    : [];
 
   const initialAcoes: Acao[] = done && resposta?.resposta
     ? (resposta.resposta as { acoes: Acao[] }).acoes

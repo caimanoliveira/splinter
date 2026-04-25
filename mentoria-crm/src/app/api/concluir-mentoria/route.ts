@@ -2,7 +2,18 @@ import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 
+function checkInternalSecret(request: NextRequest): boolean {
+  const secret = process.env.CRM_API_SECRET
+  if (!secret) return true // secret not configured — allow (dev/self-hosted)
+  const auth = request.headers.get('x-crm-secret')
+  return auth === secret
+}
+
 export async function POST(request: NextRequest) {
+  if (!checkInternalSecret(request)) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  }
+
   const { mentorado_id, email, name } = await request.json()
 
   if (!mentorado_id || !email) {

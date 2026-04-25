@@ -2,7 +2,28 @@ import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 
+function checkInternalSecret(request: NextRequest): boolean {
+  const secret = process.env.CRM_API_SECRET
+  if (!secret) return true // secret not configured — allow (dev/self-hosted)
+  const auth = request.headers.get('x-crm-secret')
+  return auth === secret
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/\n/g, '<br>')
+}
+
 export async function POST(request: NextRequest) {
+  if (!checkInternalSecret(request)) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  }
+
   const { mentorado_id, date, summary, decisions, next_steps } = await request.json()
 
   if (!mentorado_id) {
@@ -54,19 +75,19 @@ export async function POST(request: NextRequest) {
       ${summary ? `
       <div style="margin-bottom:20px;">
         <p style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 6px;">Resumo</p>
-        <p style="font-size:14px;line-height:1.6;color:#0f172a;margin:0;">${summary.replace(/\n/g, '<br>')}</p>
+        <p style="font-size:14px;line-height:1.6;color:#0f172a;margin:0;">${escapeHtml(summary)}</p>
       </div>` : ''}
 
       ${decisions ? `
       <div style="margin-bottom:20px;">
         <p style="font-size:11px;font-weight:700;color:#10b981;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 6px;">Decisões tomadas</p>
-        <p style="font-size:14px;line-height:1.6;color:#0f172a;margin:0;">${decisions.replace(/\n/g, '<br>')}</p>
+        <p style="font-size:14px;line-height:1.6;color:#0f172a;margin:0;">${escapeHtml(decisions)}</p>
       </div>` : ''}
 
       ${next_steps ? `
       <div style="margin-bottom:28px;">
         <p style="font-size:11px;font-weight:700;color:#F97316;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 6px;">Próximos passos</p>
-        <p style="font-size:14px;line-height:1.6;color:#0f172a;margin:0;">${next_steps.replace(/\n/g, '<br>')}</p>
+        <p style="font-size:14px;line-height:1.6;color:#0f172a;margin:0;">${escapeHtml(next_steps)}</p>
       </div>` : ''}
 
       <a href="${portalUrl}/portal/dashboard"

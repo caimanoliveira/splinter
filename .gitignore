@@ -146,6 +146,7 @@ dmypy.json
 .next/
 next-env.d.ts
 node_modules/
+node_modules/.package-lock.json
 
 # Local env files (never commit)
 .env.local

@@ -47,7 +47,7 @@ export default function NovaSessaoPage() {
     // Fire & forget — email não bloqueia navegação
     fetch('/api/enviar-resumo-sessao', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-crm-secret': process.env.NEXT_PUBLIC_CRM_API_SECRET ?? '' },
       body: JSON.stringify({
         mentorado_id: id,
         date: form.date,

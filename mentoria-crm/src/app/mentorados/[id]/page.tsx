@@ -145,7 +145,7 @@ export default function MentoradoDetailPage() {
     setConcluindo(true)
     const res = await fetch('/api/concluir-mentoria', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-crm-secret': process.env.NEXT_PUBLIC_CRM_API_SECRET ?? '' },
       body: JSON.stringify({ mentorado_id: mentorado.id, email: mentorado.email, name: mentorado.name }),
     })
     if (res.ok) {

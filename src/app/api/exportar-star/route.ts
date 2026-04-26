@@ -27,10 +27,18 @@ export async function GET(req: NextRequest) {
   const trilha = getTrilhaSafe(trilhaSlug);
   if (!trilha) return new Response('not_found', { status: 404 });
 
+  const { data: mentorado } = await supabase
+    .from('mentorados')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (!mentorado) return new Response('unauthorized', { status: 403 });
+
   const { data: mt } = await supabase
     .from('mentorado_trilhas')
     .select('id')
     .eq('trilha_slug', trilhaSlug)
+    .eq('mentorado_id', mentorado.id)
     .maybeSingle();
   if (!mt) return new Response('not_found', { status: 404 });
 

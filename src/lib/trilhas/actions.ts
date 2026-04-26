@@ -11,7 +11,7 @@ async function requireMentoradoId() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('unauthenticated');
-  const { data } = await supabase.from('mentorados').select('id').eq('user_id', user.id).single();
+  const { data } = await supabase.from('mentorados').select('id').eq('user_id', user.id).maybeSingle();
   if (!data) throw new Error('mentorado_not_found');
   return { supabase, mentoradoId: data.id as string, userId: user.id };
 }
@@ -55,7 +55,7 @@ export async function saveResposta(input: z.infer<typeof saveRespostaInput>) {
     .select('id')
     .eq('mentorado_id', mentoradoId)
     .eq('trilha_slug', trilhaSlug)
-    .single();
+    .maybeSingle();
   if (!mt) throw new Error('trilha_not_assigned');
 
   await supabase.from('etapa_respostas').upsert(
@@ -93,7 +93,7 @@ export async function completeEtapa(input: z.infer<typeof completeEtapaInput>) {
     .select('id')
     .eq('mentorado_id', mentoradoId)
     .eq('trilha_slug', trilhaSlug)
-    .single();
+    .maybeSingle();
   if (!mt) throw new Error('trilha_not_assigned');
 
   await supabase.from('etapa_respostas').upsert(
@@ -148,7 +148,7 @@ export async function submitPlanoAcao(input: z.infer<typeof submitPlanoAcaoInput
     .select('id')
     .eq('mentorado_id', mentoradoId)
     .eq('trilha_slug', trilhaSlug)
-    .single();
+    .maybeSingle();
   if (!mt) throw new Error('trilha_not_assigned');
 
   const origem = `trilha:${trilhaSlug}:${etapaSlug}`;

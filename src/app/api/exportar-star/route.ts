@@ -24,6 +24,9 @@ export async function GET(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Response('unauthorized', { status: 401 });
 
+  const { data: mentorado } = await supabase.from('mentorados').select('id').eq('user_id', user.id).single();
+  if (!mentorado) return new Response('forbidden', { status: 403 });
+
   const trilha = getTrilhaSafe(trilhaSlug);
   if (!trilha) return new Response('not_found', { status: 404 });
 
@@ -31,6 +34,7 @@ export async function GET(req: NextRequest) {
     .from('mentorado_trilhas')
     .select('id')
     .eq('trilha_slug', trilhaSlug)
+    .eq('mentorado_id', mentorado.id)
     .maybeSingle();
   if (!mt) return new Response('not_found', { status: 404 });
 

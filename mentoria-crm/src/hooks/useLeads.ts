@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import type { Lead } from "@/types"
 
@@ -9,7 +9,7 @@ export function useLeads(filters?: { stageId?: string; sourceId?: string; search
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchLeads = useCallback(async () => {
+  const fetchLeads = async () => {
     setLoading(true)
     setError(null)
     try {
@@ -49,11 +49,13 @@ export function useLeads(filters?: { stageId?: string; sourceId?: string; search
     } finally {
       setLoading(false)
     }
-  }, [filters?.stageId, filters?.sourceId, filters?.search])
+  }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchLeads()
-  }, [fetchLeads])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters?.stageId, filters?.sourceId, filters?.search])
 
   return { leads, loading, error, refetch: fetchLeads }
 }

@@ -28,22 +28,34 @@ export default function PlanoAcaoWidget({ trilhaSlug, etapa, resposta, contextoT
     niveis_alvo?: Record<string, number>;
   } | null;
 
-  const topGaps = fonteResposta?.matriz_slug
-    ? getMatriz(fonteResposta.matriz_slug).competencias
-        .map((c) => ({
-          competencia: c,
-          gap: (fonteResposta.niveis_alvo?.[c.id] ?? 0) - (fonteResposta.niveis_atuais?.[c.id] ?? 0),
-        }))
-        .filter((x) => x.gap > 0)
-        .sort((a, b) => b.gap - a.gap)
-        .slice(0, cfg.n_acoes)
-    : [];
+  const { topGaps, allCompetencias } = fonteResposta?.matriz_slug
+    ? (() => {
+        const m = getMatriz(fonteResposta.matriz_slug!);
+        return {
+          allCompetencias: m.competencias,
+          topGaps: m.competencias
+            .map((c) => ({
+              competencia: c,
+              gap: (fonteResposta.niveis_alvo?.[c.id] ?? 0) - (fonteResposta.niveis_atuais?.[c.id] ?? 0),
+            }))
+            .filter((x) => x.gap > 0)
+            .sort((a, b) => b.gap - a.gap)
+            .slice(0, cfg.n_acoes),
+        };
+      })()
+    : { topGaps: [], allCompetencias: [] };
 
   const inTwoWeeks = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   const initialAcoes: Acao[] = done && resposta?.resposta
     ? (resposta.resposta as { acoes: Acao[] }).acoes
-    : topGaps.map((g) => ({ competencia_id: g.competencia.id, descricao: '', prazo: inTwoWeeks }));
+    : [
+        ...topGaps.map((g) => ({ competencia_id: g.competencia.id, descricao: '', prazo: inTwoWeeks })),
+        ...Array.from(
+          { length: Math.max(0, cfg.n_acoes - topGaps.length) },
+          () => ({ competencia_id: allCompetencias[0]?.id ?? '', descricao: '', prazo: inTwoWeeks })
+        ),
+      ];
 
   const [acoes, setAcoes] = useState<Acao[]>(initialAcoes);
   const [pending, start] = useTransition();

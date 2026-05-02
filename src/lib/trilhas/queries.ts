@@ -10,11 +10,23 @@ export interface TrilhaComProgresso {
   proxima_etapa_slug: string | null;
 }
 
-export async function getTrilhasAtribuidas(): Promise<TrilhaComProgresso[]> {
+async function getMentoradoCtx() {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase.from('mentorados').select('id').eq('user_id', user.id).maybeSingle();
+  if (!data) return null;
+  return { supabase, mentoradoId: data.id as string };
+}
+
+export async function getTrilhasAtribuidas(): Promise<TrilhaComProgresso[]> {
+  const ctx = await getMentoradoCtx();
+  if (!ctx) return [];
+  const { supabase, mentoradoId } = ctx;
   const { data: mtRows } = await supabase
     .from('mentorado_trilhas')
-    .select('*, etapa_respostas(etapa_slug, status)');
+    .select('*, etapa_respostas(etapa_slug, status)')
+    .eq('mentorado_id', mentoradoId);
 
   const rows = (mtRows ?? []) as Array<
     MentoradoTrilha & { etapa_respostas: { etapa_slug: string; status: string }[] }
@@ -53,11 +65,14 @@ export async function getTrilhaComProgresso(
 ): Promise<TrilhaComProgresso | null> {
   const trilha = getTrilhaSafe(trilhaSlug);
   if (!trilha) return null;
-  const supabase = await createClient();
+  const ctx = await getMentoradoCtx();
+  if (!ctx) return null;
+  const { supabase, mentoradoId } = ctx;
   const { data: mt } = await supabase
     .from('mentorado_trilhas')
     .select('*, etapa_respostas(etapa_slug, status)')
     .eq('trilha_slug', trilhaSlug)
+    .eq('mentorado_id', mentoradoId)
     .maybeSingle();
   if (!mt) {
     return {

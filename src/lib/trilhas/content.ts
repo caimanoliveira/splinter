@@ -192,7 +192,7 @@ export function getTrilhaSafe(slug: string): Trilha | null {
 
 export function getEtapa(trilhaSlug: TrilhaSlug, etapaSlug: string) {
   const trilha = trilhas[trilhaSlug];
-  const etapa = trilha.etapas.find((e) => e.slug === etapaSlug);
+  const etapa = trilha?.etapas.find((e) => e.slug === etapaSlug);
   if (!etapa) return null;
   return { trilha, etapa };
 }

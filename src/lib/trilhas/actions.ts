@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { getTrilha, getEtapa } from './content';
+import { getTrilhaSafe, getEtapa } from './content';
 import { respostaSchemaFor } from './schemas';
 import type { TrilhaSlug } from '@/types/portal';
 
@@ -44,6 +44,7 @@ export async function saveResposta(input: z.infer<typeof saveRespostaInput>) {
   const { trilhaSlug, etapaSlug, resposta } = saveRespostaInput.parse(input);
   const { supabase, mentoradoId } = await requireMentoradoId();
 
+  if (!getTrilhaSafe(trilhaSlug)) throw new Error('trilha_not_found');
   const ctx = getEtapa(trilhaSlug as TrilhaSlug, etapaSlug);
   if (!ctx) throw new Error('etapa_not_found');
   const modo = (ctx.etapa.config as Record<string, unknown>).modo as string | undefined;
@@ -82,6 +83,7 @@ export async function completeEtapa(input: z.infer<typeof completeEtapaInput>) {
   const { trilhaSlug, etapaSlug, resposta } = completeEtapaInput.parse(input);
   const { supabase, mentoradoId } = await requireMentoradoId();
 
+  if (!getTrilhaSafe(trilhaSlug)) throw new Error('trilha_not_found');
   const ctx = getEtapa(trilhaSlug as TrilhaSlug, etapaSlug);
   if (!ctx) throw new Error('etapa_not_found');
   const modo = (ctx.etapa.config as Record<string, unknown>).modo as string | undefined;
@@ -107,13 +109,13 @@ export async function completeEtapa(input: z.infer<typeof completeEtapaInput>) {
     { onConflict: 'mentorado_trilha_id,etapa_slug' }
   );
 
-  const trilha = getTrilha(trilhaSlug as TrilhaSlug);
+  const trilha = getTrilhaSafe(trilhaSlug);
   const { data: respostas } = await supabase
     .from('etapa_respostas')
     .select('etapa_slug, status')
     .eq('mentorado_trilha_id', mt.id);
   const doneSlugs = (respostas ?? []).filter((r) => r.status === 'done').map((r) => r.etapa_slug);
-  const allDone = trilha.etapas.every((e) => doneSlugs.includes(e.slug));
+  const allDone = trilha?.etapas.every((e) => doneSlugs.includes(e.slug)) ?? false;
   if (allDone) {
     await supabase
       .from('mentorado_trilhas')
@@ -159,15 +161,18 @@ export async function submitPlanoAcao(input: z.infer<typeof submitPlanoAcaoInput
     p_origem: origem,
     p_acoes: acoes,
   });
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error('[submitPlanoAcao] RPC error:', error.message);
+    throw new Error('plano_acao_failed');
+  }
 
-  const trilha = getTrilha(trilhaSlug as TrilhaSlug);
+  const trilha = getTrilhaSafe(trilhaSlug);
   const { data: respostas } = await supabase
     .from('etapa_respostas')
     .select('etapa_slug, status')
     .eq('mentorado_trilha_id', mt.id);
   const doneSlugs = (respostas ?? []).filter((r) => r.status === 'done').map((r) => r.etapa_slug);
-  const allDone = trilha.etapas.every((e) => doneSlugs.includes(e.slug));
+  const allDone = trilha?.etapas.every((e) => doneSlugs.includes(e.slug)) ?? false;
   if (allDone) {
     await supabase
       .from('mentorado_trilhas')

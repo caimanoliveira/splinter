@@ -5,13 +5,12 @@ import { supabase } from "@/lib/supabase"
 import type { Lead } from "@/types"
 
 export function useLeads(filters?: { stageId?: string; sourceId?: string; search?: string }) {
+  const { stageId, sourceId, search } = filters ?? {}
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const fetchLeads = useCallback(async () => {
-    setLoading(true)
-    setError(null)
     try {
       let query = supabase
         .from("leads")
@@ -24,11 +23,11 @@ export function useLeads(filters?: { stageId?: string; sourceId?: string; search
         `)
         .order("created_at", { ascending: false })
 
-      if (filters?.stageId) query = query.eq("stage_id", filters.stageId)
-      if (filters?.sourceId) query = query.eq("source_id", filters.sourceId)
-      if (filters?.search) {
+      if (stageId) query = query.eq("stage_id", stageId)
+      if (sourceId) query = query.eq("source_id", sourceId)
+      if (search) {
         query = query.or(
-          `name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,email.ilike.%${filters.search}%`
+          `name.ilike.%${search}%,phone.ilike.%${search}%,email.ilike.%${search}%`
         )
       }
 
@@ -49,9 +48,13 @@ export function useLeads(filters?: { stageId?: string; sourceId?: string; search
     } finally {
       setLoading(false)
     }
-  }, [filters?.stageId, filters?.sourceId, filters?.search])
+  }, [stageId, sourceId, search])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setError(null)
     fetchLeads()
   }, [fetchLeads])
 

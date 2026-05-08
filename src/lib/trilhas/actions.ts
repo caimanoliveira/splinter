@@ -134,7 +134,7 @@ const submitPlanoAcaoInput = z.object({
     z.object({
       competencia_id: z.string(),
       descricao: z.string().min(1),
-      prazo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      prazo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((v) => !isNaN(Date.parse(v)), 'data inválida'),
     })
   ).length(3),
 });

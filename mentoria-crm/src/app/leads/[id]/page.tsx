@@ -60,12 +60,13 @@ export default function LeadDetailPage() {
   }, [id])
 
   const fetchAll = useCallback(async () => {
-    setLoading(true)
     await Promise.all([fetchLead(), fetchMeetings(), fetchInteractions()])
     setLoading(false)
   }, [fetchLead, fetchMeetings, fetchInteractions])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true)
     fetchAll()
   }, [fetchAll])
 

@@ -26,10 +26,11 @@ export async function startTrilhaIfNeeded(trilhaSlug: TrilhaSlug) {
     .maybeSingle();
   if (!mt) throw new Error('trilha_not_assigned');
   if (!mt.started_at) {
-    await supabase
+    const { error } = await supabase
       .from('mentorado_trilhas')
       .update({ started_at: new Date().toISOString() })
       .eq('id', mt.id);
+    if (error) throw new Error(error.message);
   }
   return mt.id as string;
 }
@@ -58,7 +59,7 @@ export async function saveResposta(input: z.infer<typeof saveRespostaInput>) {
     .single();
   if (!mt) throw new Error('trilha_not_assigned');
 
-  await supabase.from('etapa_respostas').upsert(
+  const { error: upsertErr } = await supabase.from('etapa_respostas').upsert(
     {
       mentorado_trilha_id: mt.id,
       etapa_slug: etapaSlug,
@@ -67,6 +68,7 @@ export async function saveResposta(input: z.infer<typeof saveRespostaInput>) {
     },
     { onConflict: 'mentorado_trilha_id,etapa_slug' }
   );
+  if (upsertErr) throw new Error(upsertErr.message);
 
   revalidatePath(`/portal/trilhas/${trilhaSlug}`);
   revalidatePath(`/portal/trilhas/${trilhaSlug}/${etapaSlug}`);
@@ -96,7 +98,7 @@ export async function completeEtapa(input: z.infer<typeof completeEtapaInput>) {
     .single();
   if (!mt) throw new Error('trilha_not_assigned');
 
-  await supabase.from('etapa_respostas').upsert(
+  const { error: upsertErr } = await supabase.from('etapa_respostas').upsert(
     {
       mentorado_trilha_id: mt.id,
       etapa_slug: etapaSlug,
@@ -106,6 +108,7 @@ export async function completeEtapa(input: z.infer<typeof completeEtapaInput>) {
     },
     { onConflict: 'mentorado_trilha_id,etapa_slug' }
   );
+  if (upsertErr) throw new Error(upsertErr.message);
 
   const trilha = getTrilha(trilhaSlug as TrilhaSlug);
   const { data: respostas } = await supabase

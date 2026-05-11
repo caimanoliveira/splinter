@@ -53,7 +53,7 @@ CREATE INDEX idx_tarefas_origem ON tarefas(origem);
 ALTER TABLE mentorado_trilhas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE etapa_respostas ENABLE ROW LEVEL SECURITY;
 
--- mentorado_trilhas: mentorado lê as suas próprias; mutações via service role (CRM)
+-- mentorado_trilhas: mentorado lê/atualiza as suas próprias; mentores (sem registro em mentorados) inserem/removem
 CREATE POLICY mentorado_trilhas_select ON mentorado_trilhas
   FOR SELECT USING (mentorado_id = get_mentorado_id());
 
@@ -61,6 +61,13 @@ CREATE POLICY mentorado_trilhas_update_started ON mentorado_trilhas
   FOR UPDATE
   USING (mentorado_id = get_mentorado_id())
   WITH CHECK (mentorado_id = get_mentorado_id());
+
+-- Mentores (usuários autenticados sem linha em mentorados) podem atribuir e remover trilhas não iniciadas
+CREATE POLICY mentorado_trilhas_insert_mentor ON mentorado_trilhas
+  FOR INSERT WITH CHECK (get_mentorado_id() IS NULL);
+
+CREATE POLICY mentorado_trilhas_delete_mentor ON mentorado_trilhas
+  FOR DELETE USING (get_mentorado_id() IS NULL AND started_at IS NULL);
 
 -- etapa_respostas: mentorado lê/escreve as suas (via join com mentorado_trilhas)
 CREATE POLICY etapa_respostas_select ON etapa_respostas

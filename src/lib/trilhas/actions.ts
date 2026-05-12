@@ -159,7 +159,7 @@ export async function submitPlanoAcao(input: z.infer<typeof submitPlanoAcaoInput
     p_origem: origem,
     p_acoes: acoes,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw new Error('plano_acao_failed');
 
   const trilha = getTrilha(trilhaSlug as TrilhaSlug);
   const { data: respostas } = await supabase

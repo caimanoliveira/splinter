@@ -28,18 +28,21 @@ export default function PlanoAcaoWidget({ trilhaSlug, etapa, resposta, contextoT
     niveis_alvo?: Record<string, number>;
   } | null;
 
+  const inTwoWeeks = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
   const topGaps = fonteResposta?.matriz_slug
-    ? getMatriz(fonteResposta.matriz_slug).competencias
-        .map((c) => ({
+    ? (() => {
+        const all = getMatriz(fonteResposta.matriz_slug!).competencias.map((c) => ({
           competencia: c,
           gap: (fonteResposta.niveis_alvo?.[c.id] ?? 0) - (fonteResposta.niveis_atuais?.[c.id] ?? 0),
-        }))
-        .filter((x) => x.gap > 0)
-        .sort((a, b) => b.gap - a.gap)
-        .slice(0, cfg.n_acoes)
+        }));
+        const withGap = all.filter((x) => x.gap > 0).sort((a, b) => b.gap - a.gap);
+        const padded = withGap.length >= cfg.n_acoes
+          ? withGap
+          : [...withGap, ...all.filter((x) => x.gap <= 0)];
+        return padded.slice(0, cfg.n_acoes);
+      })()
     : [];
-
-  const inTwoWeeks = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   const initialAcoes: Acao[] = done && resposta?.resposta
     ? (resposta.resposta as { acoes: Acao[] }).acoes

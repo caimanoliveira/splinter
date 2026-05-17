@@ -28,11 +28,13 @@ const styles = StyleSheet.create({
   footerText: { fontSize: 8, color: "#94a3b8", textAlign: "center" },
 });
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const mentorado_id = searchParams.get("mentorado_id");
-  if (!mentorado_id) {
-    return NextResponse.json({ error: "mentorado_id obrigatório" }, { status: 400 });
+  if (!mentorado_id || !UUID_RE.test(mentorado_id)) {
+    return NextResponse.json({ error: "mentorado_id inválido" }, { status: 400 });
   }
 
   // Auth check: validate user owns this mentorado_id

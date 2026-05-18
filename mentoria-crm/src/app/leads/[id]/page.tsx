@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, startTransition } from "react"
 import { useParams, useRouter } from "next/navigation"
 import {
   ArrowLeft, Phone, Mail, Calendar, Edit3, Trash2, Plus,
@@ -59,10 +59,12 @@ export default function LeadDetailPage() {
     setInteractions(data || [])
   }, [id])
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true)
-    await Promise.all([fetchLead(), fetchMeetings(), fetchInteractions()])
-    setLoading(false)
+  const fetchAll = useCallback(() => {
+    startTransition(async () => {
+      setLoading(true)
+      await Promise.all([fetchLead(), fetchMeetings(), fetchInteractions()])
+      setLoading(false)
+    })
   }, [fetchLead, fetchMeetings, fetchInteractions])
 
   useEffect(() => {

@@ -39,7 +39,7 @@ export default function PlanoAcaoWidget({ trilhaSlug, etapa, resposta, contextoT
         .slice(0, cfg.n_acoes)
     : [];
 
-  const inTwoWeeks = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const [inTwoWeeks] = useState(() => new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10));
 
   const initialAcoes: Acao[] = done && resposta?.resposta
     ? (resposta.resposta as { acoes: Acao[] }).acoes

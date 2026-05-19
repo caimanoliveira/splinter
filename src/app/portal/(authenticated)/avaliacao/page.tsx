@@ -309,7 +309,7 @@ export default function AvaliacaoPage() {
                   {history.length > 0 && (
                     <div className="flex items-center gap-1.5 mb-3">
                       <span className="text-[#94a3b8] text-[10px]">Histórico:</span>
-                      {history.map((h, i) => (
+                      {history.map((h) => (
                         <span
                           key={h.id}
                           title={`${h.score}/10 em ${new Date(h.assessed_at).toLocaleDateString("pt-BR")}`}

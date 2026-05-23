@@ -136,11 +136,16 @@ const submitPlanoAcaoInput = z.object({
       descricao: z.string().min(1),
       prazo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     })
-  ).length(3),
+  ).min(1).max(5),
 });
 
 export async function submitPlanoAcao(input: z.infer<typeof submitPlanoAcaoInput>) {
   const { trilhaSlug, etapaSlug, acoes } = submitPlanoAcaoInput.parse(input);
+
+  const ctx = getEtapa(trilhaSlug as TrilhaSlug, etapaSlug);
+  if (!ctx) throw new Error('etapa_not_found');
+  const nAcoes = ((ctx.etapa.config as Record<string, unknown>).n_acoes as number | undefined) ?? 3;
+  if (acoes.length !== nAcoes) throw new Error(`acoes_length_invalid: expected ${nAcoes}`);
   const { supabase, mentoradoId } = await requireMentoradoId();
 
   const { data: mt } = await supabase

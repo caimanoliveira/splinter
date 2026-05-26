@@ -190,15 +190,16 @@ export default function MentoradoDetailPage() {
     setAtribuindoTrilha(true)
     setTrilhaError(null)
     const { data: { user } } = await supabase.auth.getUser()
-    const { data, error } = await supabase.from("mentorado_trilhas").insert({
-      mentorado_id: id,
-      trilha_slug: trilhaSlug,
-      assigned_by: user?.id ?? null,
-    }).select("id, trilha_slug, assigned_at, started_at, completed_at").single()
-    if (error) {
-      setTrilhaError(error.code === "23505" ? "Trilha já atribuída." : error.message)
-    } else if (data) {
-      setTrilhas(prev => [{ ...(data as MentoradoTrilha), etapa_respostas: [] }, ...prev])
+    const res = await fetch('/api/atribuir-trilha', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mentorado_id: id, trilha_slug: trilhaSlug, assigned_by: user?.id ?? null }),
+    })
+    const json = await res.json()
+    if (!res.ok) {
+      setTrilhaError(json.code === "23505" ? "Trilha já atribuída." : (json.error ?? "Erro ao atribuir trilha."))
+    } else if (json.data) {
+      setTrilhas(prev => [{ ...(json.data as MentoradoTrilha), etapa_respostas: [] }, ...prev])
       setTrilhaSlug("")
     }
     setAtribuindoTrilha(false)
@@ -210,9 +211,14 @@ export default function MentoradoDetailPage() {
       setTrilhaError("Trilha já iniciada — não pode ser removida.")
       return
     }
-    const { error } = await supabase.from("mentorado_trilhas").delete().eq("id", mt.id)
-    if (error) {
-      setTrilhaError(error.message)
+    const res = await fetch('/api/remover-trilha', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mentorado_trilha_id: mt.id }),
+    })
+    if (!res.ok) {
+      const json = await res.json()
+      setTrilhaError(json.error ?? "Erro ao remover trilha.")
       return
     }
     setTrilhas(prev => prev.filter(x => x.id !== mt.id))

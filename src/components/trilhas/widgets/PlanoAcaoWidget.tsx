@@ -1,6 +1,10 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useMemo } from 'react';
+
+function defaultDeadline() {
+  return new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
 import { CheckCircle2 } from 'lucide-react';
 import { submitPlanoAcao } from '@/lib/trilhas/actions';
 import { getMatriz } from '@/lib/trilhas/matrizes';
@@ -28,22 +32,23 @@ export default function PlanoAcaoWidget({ trilhaSlug, etapa, resposta, contextoT
     niveis_alvo?: Record<string, number>;
   } | null;
 
-  const topGaps = fonteResposta?.matriz_slug
-    ? getMatriz(fonteResposta.matriz_slug).competencias
-        .map((c) => ({
-          competencia: c,
-          gap: (fonteResposta.niveis_alvo?.[c.id] ?? 0) - (fonteResposta.niveis_atuais?.[c.id] ?? 0),
-        }))
-        .filter((x) => x.gap > 0)
-        .sort((a, b) => b.gap - a.gap)
-        .slice(0, cfg.n_acoes)
-    : [];
-
-  const inTwoWeeks = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const topGaps = useMemo(() => {
+    if (!fonteResposta?.matriz_slug) return [];
+    const all = getMatriz(fonteResposta.matriz_slug).competencias.map((c) => ({
+      competencia: c,
+      gap: (fonteResposta.niveis_alvo?.[c.id] ?? 0) - (fonteResposta.niveis_atuais?.[c.id] ?? 0),
+    }));
+    const positive = all.filter((x) => x.gap > 0).sort((a, b) => b.gap - a.gap).slice(0, cfg.n_acoes);
+    if (positive.length < cfg.n_acoes) {
+      const zeroFill = all.filter((x) => x.gap <= 0).slice(0, cfg.n_acoes - positive.length);
+      return [...positive, ...zeroFill];
+    }
+    return positive;
+  }, [fonteResposta, cfg.n_acoes]);
 
   const initialAcoes: Acao[] = done && resposta?.resposta
     ? (resposta.resposta as { acoes: Acao[] }).acoes
-    : topGaps.map((g) => ({ competencia_id: g.competencia.id, descricao: '', prazo: inTwoWeeks }));
+    : topGaps.map((g) => ({ competencia_id: g.competencia.id, descricao: '', prazo: defaultDeadline() }));
 
   const [acoes, setAcoes] = useState<Acao[]>(initialAcoes);
   const [pending, start] = useTransition();

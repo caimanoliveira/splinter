@@ -28,22 +28,29 @@ export default function PlanoAcaoWidget({ trilhaSlug, etapa, resposta, contextoT
     niveis_alvo?: Record<string, number>;
   } | null;
 
-  const topGaps = fonteResposta?.matriz_slug
-    ? getMatriz(fonteResposta.matriz_slug).competencias
-        .map((c) => ({
-          competencia: c,
-          gap: (fonteResposta.niveis_alvo?.[c.id] ?? 0) - (fonteResposta.niveis_atuais?.[c.id] ?? 0),
-        }))
-        .filter((x) => x.gap > 0)
-        .sort((a, b) => b.gap - a.gap)
-        .slice(0, cfg.n_acoes)
-    : [];
-
   const inTwoWeeks = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   const initialAcoes: Acao[] = done && resposta?.resposta
     ? (resposta.resposta as { acoes: Acao[] }).acoes
-    : topGaps.map((g) => ({ competencia_id: g.competencia.id, descricao: '', prazo: inTwoWeeks }));
+    : (() => {
+        if (!fonteResposta?.matriz_slug) return [];
+        const matriz = getMatriz(fonteResposta.matriz_slug);
+        const gaps = matriz.competencias
+          .map((c) => ({
+            competencia: c,
+            gap: (fonteResposta.niveis_alvo?.[c.id] ?? 0) - (fonteResposta.niveis_atuais?.[c.id] ?? 0),
+          }))
+          .filter((x) => x.gap > 0)
+          .sort((a, b) => b.gap - a.gap)
+          .slice(0, cfg.n_acoes);
+        const base = gaps.map((g) => ({ competencia_id: g.competencia.id, descricao: '', prazo: inTwoWeeks }));
+        // Pad with first competence when fewer than n_acoes gaps exist (e.g. all ratings at max)
+        const fallback = matriz.competencias[0];
+        while (fallback && base.length < cfg.n_acoes) {
+          base.push({ competencia_id: fallback.id, descricao: '', prazo: inTwoWeeks });
+        }
+        return base;
+      })();
 
   const [acoes, setAcoes] = useState<Acao[]>(initialAcoes);
   const [pending, start] = useTransition();

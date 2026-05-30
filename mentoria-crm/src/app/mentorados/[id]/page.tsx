@@ -189,19 +189,25 @@ export default function MentoradoDetailPage() {
     if (!id || !trilhaSlug) return
     setAtribuindoTrilha(true)
     setTrilhaError(null)
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data, error } = await supabase.from("mentorado_trilhas").insert({
-      mentorado_id: id,
-      trilha_slug: trilhaSlug,
-      assigned_by: user?.id ?? null,
-    }).select("id, trilha_slug, assigned_at, started_at, completed_at").single()
-    if (error) {
-      setTrilhaError(error.code === "23505" ? "Trilha já atribuída." : error.message)
-    } else if (data) {
-      setTrilhas(prev => [{ ...(data as MentoradoTrilha), etapa_respostas: [] }, ...prev])
-      setTrilhaSlug("")
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      const res = await fetch('/api/atribuir-trilha', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mentorado_id: id, trilha_slug: trilhaSlug, assigned_by: user?.id ?? null }),
+      })
+      const payload = await res.json()
+      if (!res.ok) {
+        setTrilhaError(res.status === 409 ? "Trilha já atribuída." : (payload.error ?? 'Erro ao atribuir trilha.'))
+      } else {
+        setTrilhas(prev => [{ ...(payload as MentoradoTrilha), etapa_respostas: [] }, ...prev])
+        setTrilhaSlug("")
+      }
+    } catch {
+      setTrilhaError('Erro de rede ao atribuir trilha.')
+    } finally {
+      setAtribuindoTrilha(false)
     }
-    setAtribuindoTrilha(false)
   }
 
   async function handleRemoverTrilha(mt: MentoradoTrilha) {
@@ -210,12 +216,21 @@ export default function MentoradoDetailPage() {
       setTrilhaError("Trilha já iniciada — não pode ser removida.")
       return
     }
-    const { error } = await supabase.from("mentorado_trilhas").delete().eq("id", mt.id)
-    if (error) {
-      setTrilhaError(error.message)
-      return
+    try {
+      const res = await fetch('/api/remover-trilha', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mentorado_trilha_id: mt.id }),
+      })
+      if (!res.ok) {
+        const payload = await res.json()
+        setTrilhaError(payload.error ?? 'Erro ao remover trilha.')
+        return
+      }
+      setTrilhas(prev => prev.filter(x => x.id !== mt.id))
+    } catch {
+      setTrilhaError('Erro de rede ao remover trilha.')
     }
-    setTrilhas(prev => prev.filter(x => x.id !== mt.id))
   }
 
   if (loading) return <div className="text-center py-20 text-slate-400">Carregando…</div>

@@ -1,11 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export async function DELETE(request: NextRequest) {
   const { mentorado_trilha_id } = await request.json()
 
   if (!mentorado_trilha_id) {
     return NextResponse.json({ error: 'mentorado_trilha_id é obrigatório' }, { status: 400 })
+  }
+
+  if (!UUID_RE.test(mentorado_trilha_id)) {
+    return NextResponse.json({ error: 'mentorado_trilha_id inválido' }, { status: 400 })
   }
 
   const supabaseAdmin = createClient(

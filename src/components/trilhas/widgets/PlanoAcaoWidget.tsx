@@ -34,7 +34,6 @@ export default function PlanoAcaoWidget({ trilhaSlug, etapa, resposta, contextoT
           competencia: c,
           gap: (fonteResposta.niveis_alvo?.[c.id] ?? 0) - (fonteResposta.niveis_atuais?.[c.id] ?? 0),
         }))
-        .filter((x) => x.gap > 0)
         .sort((a, b) => b.gap - a.gap)
         .slice(0, cfg.n_acoes)
     : [];

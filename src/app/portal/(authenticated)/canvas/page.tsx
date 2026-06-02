@@ -14,8 +14,6 @@ const dimensions = [
   { key: "scenarios",     label: "7. Cenários e trade-offs",  placeholder: "Se escolher A, o que você ganha e perde? E se escolher B? Use 'se… então…'.", color: "#64748b" },
 ] as const;
 
-type DimensionKey = typeof dimensions[number]["key"];
-
 const helpContent: Record<string, { definition: string; questions: string[]; example: string }> = {
   context: {
     definition: "O ponto de partida: qual decisão está em jogo, quando precisa ser tomada e o que a torna difícil.",

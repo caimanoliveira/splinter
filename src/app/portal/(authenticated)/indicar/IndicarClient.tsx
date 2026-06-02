@@ -7,7 +7,7 @@ interface Props {
   referralUrl: string;
 }
 
-export default function IndicarClient({ name, referralUrl }: Props) {
+export default function IndicarClient({ referralUrl }: Props) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {

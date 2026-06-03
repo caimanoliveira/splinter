@@ -1,14 +1,10 @@
 import type { NextConfig } from "next";
 
-// __dirname resolves to the mentoria-crm/ directory via SWC's requireFromString,
-// pinning Turbopack's workspace root here so it doesn't scan up to the repo root
-// (which has no node_modules/ on Vercel when rootDirectory is set).
-declare const __dirname: string;
-
 const nextConfig: NextConfig = {
-  turbopack: {
-    root: __dirname,
-  },
+  // Silence the workspace root warning when building in a monorepo subdirectory.
+  // Vercel only installs node_modules inside rootDirectory, so tracing must be
+  // scoped to this package rather than the repo root.
+  outputFileTracingRoot: process.cwd(),
 };
 
 export default nextConfig;

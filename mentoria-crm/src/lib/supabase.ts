@@ -4,6 +4,6 @@ import { createClient } from '@supabase/supabase-js'
 // NEXT_PUBLIC_ vars are absent during Vercel PR preview builds. Actual
 // requests only happen in the browser after hydration, where real values exist.
 export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder-key'
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 )

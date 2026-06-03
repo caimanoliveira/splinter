@@ -1,4 +1,3 @@
-import path from "path"
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -7,7 +6,8 @@ const nextConfig: NextConfig = {
     // rootDirectory (mentoria-crm). Without this, Turbopack walks up to the
     // repo root (finding /splinter/package-lock.json) and tries to resolve
     // modules from /splinter/node_modules which does not exist in CI.
-    root: path.resolve(__dirname),
+    // process.cwd() is the CWD when `next build` runs — always this dir.
+    root: process.cwd(),
   },
 };
 

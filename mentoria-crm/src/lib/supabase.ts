@@ -1,21 +1,9 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
 
-let _client: SupabaseClient | null = null
-
-function getClient(): SupabaseClient {
-  if (!_client) {
-    _client = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-  }
-  return _client
-}
-
-// Lazy proxy so the client isn't created at module-eval time (avoids missing
-// env-var errors during Next.js static-page generation at build time).
-export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
-  get(_, prop: string | symbol) {
-    return (getClient() as unknown as Record<string | symbol, unknown>)[prop]
-  },
-})
+// Fallback values keep createClient from throwing at module-eval time when
+// NEXT_PUBLIC_ vars are absent during Vercel PR preview builds. Actual
+// requests only happen in the browser after hydration, where real values exist.
+export const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder-key'
+)

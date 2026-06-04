@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
         ...(sessoes ?? []).slice(0, 3).map((s) =>
           createElement(View, { key: s.id, style: styles.field },
             createElement(Text, { style: styles.label },
-              new Date(s.date).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
+              s.date ? new Date(s.date).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" }) : "—"
             ),
             s.summary ? createElement(Text, { style: styles.text }, s.summary) : null,
           )

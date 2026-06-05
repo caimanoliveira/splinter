@@ -4,7 +4,6 @@ import { useState } from "react"
 import {
   DndContext,
   DragEndEvent,
-  DragOverEvent,
   DragOverlay,
   DragStartEvent,
   PointerSensor,
@@ -12,7 +11,6 @@ import {
   useSensors,
   closestCorners,
 } from "@dnd-kit/core"
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { KanbanColumn } from "./kanban-column"
 import { KanbanCardOverlay } from "./kanban-card"
 import { supabase } from "@/lib/supabase"
@@ -26,11 +24,7 @@ interface KanbanBoardProps {
 
 export function KanbanBoard({ stages, leads, onRefresh }: KanbanBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [leadsByStage, setLeadsByStage] = useState<Record<string, Lead[]>>(() =>
-    buildLeadsByStage(stages, leads)
-  )
 
-  // Rebuild when props change
   const currentLeadsByStage = buildLeadsByStage(stages, leads)
 
   const sensors = useSensors(

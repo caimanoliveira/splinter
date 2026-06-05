@@ -13,7 +13,7 @@ import { useStages } from "@/hooks/useStages"
 import { useProducts } from "@/hooks/useProducts"
 import { useSources } from "@/hooks/useSources"
 import { formatCurrency } from "@/lib/utils"
-import type { Stage, Product, Source } from "@/types"
+import type { Stage, Product } from "@/types"
 
 // Stage type labels
 const stageTypeLabels = { normal: "Normal", won: "Fechado", lost: "Perdido" }
@@ -310,8 +310,6 @@ function SourcesSection() {
 
 // ============ WHATSAPP ============
 function WhatsAppSection() {
-  const [phone, setPhone] = useState(process.env.NEXT_PUBLIC_CALLMEBOT_PHONE || "")
-  const [apiKey, setApiKey] = useState("")
   const [testing, setTesting] = useState(false)
   const [result, setResult] = useState("")
 

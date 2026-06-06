@@ -19,6 +19,7 @@ export function useProducts() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchProducts()
   }, [])
 

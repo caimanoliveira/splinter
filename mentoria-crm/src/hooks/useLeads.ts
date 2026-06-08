@@ -8,52 +8,56 @@ export function useLeads(filters?: { stageId?: string; sourceId?: string; search
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [tick, setTick] = useState(0)
 
-  const fetchLeads = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      let query = supabase
-        .from("leads")
-        .select(`
-          *,
-          stage:stages(*),
-          source:sources(*),
-          product:products(*),
-          next_meeting:meetings(*)
-        `)
-        .order("created_at", { ascending: false })
+  useEffect(() => {
+    let cancelled = false
 
-      if (filters?.stageId) query = query.eq("stage_id", filters.stageId)
-      if (filters?.sourceId) query = query.eq("source_id", filters.sourceId)
-      if (filters?.search) {
-        query = query.or(
-          `name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,email.ilike.%${filters.search}%`
-        )
+    let query = supabase
+      .from("leads")
+      .select(`
+        *,
+        stage:stages(*),
+        source:sources(*),
+        product:products(*),
+        next_meeting:meetings(*)
+      `)
+      .order("created_at", { ascending: false })
+
+    if (filters?.stageId) query = query.eq("stage_id", filters.stageId)
+    if (filters?.sourceId) query = query.eq("source_id", filters.sourceId)
+    if (filters?.search) {
+      query = query.or(
+        `name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,email.ilike.%${filters.search}%`
+      )
+    }
+
+    query.then(({ data, error: queryError }) => {
+      if (cancelled) return
+      if (queryError) {
+        setError(queryError.message)
+        setLoading(false)
+        return
       }
-
-      const { data, error } = await query
-      if (error) throw error
-
-      // Get next meeting for each lead (the closest future meeting)
       const leadsWithNextMeeting = (data || []).map((lead) => {
         const futureMeetings = (lead.next_meeting || [])
           .filter((m: { date: string }) => new Date(m.date) >= new Date())
           .sort((a: { date: string }, b: { date: string }) => new Date(a.date).getTime() - new Date(b.date).getTime())
         return { ...lead, next_meeting: futureMeetings[0] || null }
       })
-
       setLeads(leadsWithNextMeeting)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao carregar leads")
-    } finally {
+      setError(null)
       setLoading(false)
-    }
-  }, [filters?.stageId, filters?.sourceId, filters?.search])
+    })
 
-  useEffect(() => {
-    fetchLeads()
-  }, [fetchLeads])
+    return () => { cancelled = true }
+  }, [filters?.stageId, filters?.sourceId, filters?.search, tick])
 
-  return { leads, loading, error, refetch: fetchLeads }
+  const refetch = useCallback(() => {
+    setLoading(true)
+    setError(null)
+    setTick((t) => t + 1)
+  }, [])
+
+  return { leads, loading, error, refetch }
 }

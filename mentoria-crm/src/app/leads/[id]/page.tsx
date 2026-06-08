@@ -28,18 +28,27 @@ export default function LeadDetailPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([])
   const [interactions, setInteractions] = useState<Interaction[]>([])
   const [loading, setLoading] = useState(true)
+  const [tick, setTick] = useState(0)
   const [showEdit, setShowEdit] = useState(false)
   const [showMeeting, setShowMeeting] = useState(false)
   const [sendingNotif, setSendingNotif] = useState<string | null>(null)
 
-  const fetchLead = useCallback(async () => {
-    const { data } = await supabase
-      .from("leads")
-      .select("*, stage:stages(*), source:sources(*), product:products(*)")
-      .eq("id", id)
-      .single()
-    setLead(data)
-  }, [id])
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([
+      supabase.from("leads").select("*, stage:stages(*), source:sources(*), product:products(*)").eq("id", id).single(),
+      supabase.from("meetings").select("*").eq("lead_id", id).order("date", { ascending: true }),
+      supabase.from("interactions").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
+    ]).then(([leadRes, meetingsRes, interactionsRes]) => {
+      if (!cancelled) {
+        setLead(leadRes.data)
+        setMeetings(meetingsRes.data || [])
+        setInteractions(interactionsRes.data || [])
+        setLoading(false)
+      }
+    })
+    return () => { cancelled = true }
+  }, [id, tick])
 
   const fetchMeetings = useCallback(async () => {
     const { data } = await supabase
@@ -59,15 +68,10 @@ export default function LeadDetailPage() {
     setInteractions(data || [])
   }, [id])
 
-  const fetchAll = useCallback(async () => {
+  const fetchAll = useCallback(() => {
     setLoading(true)
-    await Promise.all([fetchLead(), fetchMeetings(), fetchInteractions()])
-    setLoading(false)
-  }, [fetchLead, fetchMeetings, fetchInteractions])
-
-  useEffect(() => {
-    fetchAll()
-  }, [fetchAll])
+    setTick((t) => t + 1)
+  }, [])
 
   const deleteLead = async () => {
     if (!confirm(`Tem certeza que deseja excluir o lead "${lead?.name}"?`)) return

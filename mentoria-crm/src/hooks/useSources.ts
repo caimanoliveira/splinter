@@ -1,22 +1,26 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { supabase } from "@/lib/supabase"
 import type { Source } from "@/types"
 
 export function useSources() {
   const [sources, setSources] = useState<Source[]>([])
   const [loading, setLoading] = useState(true)
-
-  const fetchSources = async () => {
-    const { data } = await supabase.from("sources").select("*").order("name")
-    setSources(data || [])
-    setLoading(false)
-  }
+  const [tick, setTick] = useState(0)
 
   useEffect(() => {
-    fetchSources()
-  }, [])
+    let cancelled = false
+    supabase.from("sources").select("*").order("name")
+      .then(({ data }) => {
+        if (!cancelled) {
+          setSources(data || [])
+          setLoading(false)
+        }
+      })
+    return () => { cancelled = true }
+  }, [tick])
 
-  return { sources, loading, refetch: fetchSources }
+  const refetch = useCallback(() => setTick((t) => t + 1), [])
+  return { sources, loading, refetch }
 }

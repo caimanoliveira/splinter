@@ -1,25 +1,26 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { supabase } from "@/lib/supabase"
 import type { Stage } from "@/types"
 
 export function useStages() {
   const [stages, setStages] = useState<Stage[]>([])
   const [loading, setLoading] = useState(true)
-
-  const fetchStages = async () => {
-    const { data } = await supabase
-      .from("stages")
-      .select("*")
-      .order("order", { ascending: true })
-    setStages(data || [])
-    setLoading(false)
-  }
+  const [tick, setTick] = useState(0)
 
   useEffect(() => {
-    fetchStages()
-  }, [])
+    let cancelled = false
+    supabase.from("stages").select("*").order("order", { ascending: true })
+      .then(({ data }) => {
+        if (!cancelled) {
+          setStages(data || [])
+          setLoading(false)
+        }
+      })
+    return () => { cancelled = true }
+  }, [tick])
 
-  return { stages, loading, refetch: fetchStages }
+  const refetch = useCallback(() => setTick((t) => t + 1), [])
+  return { stages, loading, refetch }
 }

@@ -56,12 +56,13 @@ function MarkdownMinimal({ content }: { content: string }) {
   const lines = content.split('\n');
   const elements: React.ReactNode[] = [];
   let bulletBuffer: string[] = [];
+  let keyCounter = 0;
 
   const flush = () => {
     if (bulletBuffer.length > 0) {
       elements.push(
         <ul
-          key={elements.length}
+          key={keyCounter++}
           className="list-disc ml-5 mb-3 text-[#64748b] text-sm leading-relaxed"
         >
           {bulletBuffer.map((b, i) => (
@@ -83,7 +84,7 @@ function MarkdownMinimal({ content }: { content: string }) {
       flush();
       elements.push(
         <h3
-          key={elements.length}
+          key={keyCounter++}
           className="font-semibold text-sm text-[#0f172a] mt-4 mb-2"
         >
           {renderInline(line.slice(4))}
@@ -95,7 +96,7 @@ function MarkdownMinimal({ content }: { content: string }) {
       flush();
       elements.push(
         <h2
-          key={elements.length}
+          key={keyCounter++}
           className="font-bold text-base text-[#0f172a] mt-5 mb-2"
         >
           {renderInline(line.slice(3))}
@@ -107,7 +108,7 @@ function MarkdownMinimal({ content }: { content: string }) {
       flush();
       elements.push(
         <h1
-          key={elements.length}
+          key={keyCounter++}
           className="font-extrabold text-lg text-[#0f172a] mt-6 mb-3"
         >
           {renderInline(line.slice(2))}
@@ -122,7 +123,7 @@ function MarkdownMinimal({ content }: { content: string }) {
     flush();
     elements.push(
       <p
-        key={elements.length}
+        key={keyCounter++}
         className="text-[#64748b] text-sm leading-relaxed mb-3"
       >
         {renderInline(line)}

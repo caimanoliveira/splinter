@@ -1,19 +1,10 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
 
-let _client: SupabaseClient | null = null
+// NEXT_PUBLIC_* vars are embedded at build time. In preview/CI builds where
+// env vars may be absent, use placeholders so the module doesn't crash.
+// All Supabase calls are in client-side useEffect hooks — they never run
+// during static page generation.
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 
-function getClient(): SupabaseClient {
-  if (!_client) {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    if (!url || !key) throw new Error('Supabase env vars not configured')
-    _client = createClient(url, key)
-  }
-  return _client
-}
-
-export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
-  get(_, prop: string | symbol) {
-    return getClient()[prop as keyof SupabaseClient]
-  },
-})
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)

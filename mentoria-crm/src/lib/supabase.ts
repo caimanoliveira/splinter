@@ -1,23 +1,28 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
 
-let _client: SupabaseClient | null = null
-
-function getClient(): SupabaseClient {
-  if (!_client) {
-    _client = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-  }
-  return _client
+// Deferred so the client is only created on first access, not at module eval
+// time. This prevents "supabaseUrl is required" errors when env vars are
+// absent during Next.js build / static-analysis.
+function make() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 }
 
-// Lazy proxy so the client is only created on first access, not at module eval time.
-// This prevents "supabaseUrl is required" errors during Next.js build/static analysis.
-export const supabase = new Proxy({} as SupabaseClient, {
-  get(_target, prop) {
-    const client = getClient()
-    const value = client[prop as keyof SupabaseClient]
-    return typeof value === 'function' ? (value as Function).bind(client) : value
+type Client = ReturnType<typeof make>
+
+let _client: Client | undefined
+
+function getClient(): Client {
+  return (_client ??= make())
+}
+
+export const supabase: Client = new Proxy({} as Client, {
+  get(_t, prop: string | symbol) {
+    const c = getClient()
+    const v = c[prop as keyof Client]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return typeof v === 'function' ? (v as (...a: any[]) => any).bind(c) : v
   },
 })

@@ -4,8 +4,8 @@ import { createClient } from '@supabase/supabase-js'
 // vars are absent. The proxy defers actual client creation to first access.
 const make = () =>
   createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co',
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder-anon-key'
+    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key'
   )
 
 type Client = ReturnType<typeof make>

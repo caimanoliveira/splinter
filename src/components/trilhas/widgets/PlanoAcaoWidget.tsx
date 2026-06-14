@@ -41,9 +41,16 @@ export default function PlanoAcaoWidget({ trilhaSlug, etapa, resposta, contextoT
 
   const inTwoWeeks = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
+  const firstCompetenciaId = fonteResposta?.matriz_slug
+    ? getMatriz(fonteResposta.matriz_slug).competencias[0]?.id ?? ''
+    : '';
   const initialAcoes: Acao[] = done && resposta?.resposta
     ? (resposta.resposta as { acoes: Acao[] }).acoes
-    : topGaps.map((g) => ({ competencia_id: g.competencia.id, descricao: '', prazo: inTwoWeeks }));
+    : Array.from({ length: cfg.n_acoes }, (_, i) => ({
+        competencia_id: topGaps[i]?.competencia.id ?? firstCompetenciaId,
+        descricao: '',
+        prazo: inTwoWeeks,
+      }));
 
   const [acoes, setAcoes] = useState<Acao[]>(initialAcoes);
   const [pending, start] = useTransition();

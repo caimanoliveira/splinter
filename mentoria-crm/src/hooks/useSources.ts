@@ -15,7 +15,8 @@ export function useSources() {
   }
 
   useEffect(() => {
-    fetchSources()
+    async function load() { await fetchSources() }
+    load()
   }, [])
 
   return { sources, loading, refetch: fetchSources }

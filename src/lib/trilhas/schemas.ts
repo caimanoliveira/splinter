@@ -90,7 +90,7 @@ export const planoAcaoRespostaSchema = z.object({
       descricao: z.string().min(1),
       prazo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'data YYYY-MM-DD'),
     })
-  ).length(3),
+  ).min(1).max(5),
 });
 
 export function respostaSchemaFor(tipo: string, modo?: string) {

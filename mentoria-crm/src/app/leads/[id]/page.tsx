@@ -59,15 +59,14 @@ export default function LeadDetailPage() {
     setInteractions(data || [])
   }, [id])
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true)
-    await Promise.all([fetchLead(), fetchMeetings(), fetchInteractions()])
-    setLoading(false)
-  }, [fetchLead, fetchMeetings, fetchInteractions])
-
   useEffect(() => {
-    fetchAll()
-  }, [fetchAll])
+    async function load() {
+      setLoading(true)
+      await Promise.all([fetchLead(), fetchMeetings(), fetchInteractions()])
+      setLoading(false)
+    }
+    load()
+  }, [fetchLead, fetchMeetings, fetchInteractions])
 
   const deleteLead = async () => {
     if (!confirm(`Tem certeza que deseja excluir o lead "${lead?.name}"?`)) return
@@ -304,7 +303,7 @@ export default function LeadDetailPage() {
           </DialogHeader>
           <LeadForm
             lead={lead}
-            onSuccess={() => { setShowEdit(false); fetchAll() }}
+            onSuccess={() => { setShowEdit(false); fetchLead(); fetchMeetings(); fetchInteractions() }}
             onCancel={() => setShowEdit(false)}
           />
         </DialogContent>

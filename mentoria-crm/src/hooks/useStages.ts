@@ -18,7 +18,8 @@ export function useStages() {
   }
 
   useEffect(() => {
-    fetchStages()
+    async function load() { await fetchStages() }
+    load()
   }, [])
 
   return { stages, loading, refetch: fetchStages }

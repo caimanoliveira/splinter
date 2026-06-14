@@ -8,8 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
-    "start": "next start",
-    "postinstall": "if [ -n \"$VERCEL\" ]; then rm -f ../package-lock.json; fi"
+    "start": "next start"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

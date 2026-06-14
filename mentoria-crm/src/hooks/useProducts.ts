@@ -19,7 +19,8 @@ export function useProducts() {
   }
 
   useEffect(() => {
-    fetchProducts()
+    async function load() { await fetchProducts() }
+    load()
   }, [])
 
   return { products, loading, refetch: fetchProducts }

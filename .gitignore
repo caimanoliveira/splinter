@@ -152,3 +152,6 @@ tsconfig.tsbuildinfo
 .env.local
 .env.*.local
 .vercel
+
+# Root package-lock.json — mentoria-crm uses its own lockfile in mentoria-crm/
+/package-lock.json

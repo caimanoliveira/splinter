@@ -303,7 +303,7 @@ export default function LeadDetailPage() {
           </DialogHeader>
           <LeadForm
             lead={lead}
-            onSuccess={() => { setShowEdit(false); fetchAll() }}
+            onSuccess={() => { setShowEdit(false); fetchLead(); fetchMeetings(); fetchInteractions() }}
             onCancel={() => setShowEdit(false)}
           />
         </DialogContent>

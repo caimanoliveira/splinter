@@ -159,7 +159,11 @@ export async function submitPlanoAcao(input: z.infer<typeof submitPlanoAcaoInput
     p_origem: origem,
     p_acoes: acoes,
   });
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.message.includes('plano_acao_ja_submetido')) throw new Error('Plano de ação já foi submetido.');
+    if (error.message.includes('mentorado_trilha_not_found_or_unauthorized')) throw new Error('Trilha não encontrada ou acesso negado.');
+    throw new Error('Erro ao submeter plano de ação.');
+  }
 
   const trilha = getTrilha(trilhaSlug as TrilhaSlug);
   const { data: respostas } = await supabase

@@ -88,7 +88,7 @@ export const planoAcaoRespostaSchema = z.object({
     z.object({
       competencia_id: z.string(),
       descricao: z.string().min(1),
-      prazo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'data YYYY-MM-DD'),
+      prazo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'data YYYY-MM-DD').refine((v) => !isNaN(Date.parse(v)), 'data inválida'),
     })
   ).length(3),
 });

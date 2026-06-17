@@ -73,10 +73,11 @@ export async function GET(req: NextRequest) {
   );
 
   const buf = await renderToBuffer(doc);
+  const safeSlug = trilhaSlug.replace(/[^a-z0-9-]/gi, '_');
   return new Response(buf as unknown as BodyInit, {
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="stars-${trilhaSlug}.pdf"`,
+      'Content-Disposition': `attachment; filename="stars-${safeSlug}.pdf"`,
     },
   });
 }

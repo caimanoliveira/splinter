@@ -12,9 +12,14 @@ export interface TrilhaComProgresso {
 
 export async function getTrilhasAtribuidas(): Promise<TrilhaComProgresso[]> {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data: mentorado } = await supabase.from('mentorados').select('id').eq('user_id', user.id).maybeSingle();
+  if (!mentorado) return [];
   const { data: mtRows } = await supabase
     .from('mentorado_trilhas')
-    .select('*, etapa_respostas(etapa_slug, status)');
+    .select('*, etapa_respostas(etapa_slug, status)')
+    .eq('mentorado_id', mentorado.id);
 
   const rows = (mtRows ?? []) as Array<
     MentoradoTrilha & { etapa_respostas: { etapa_slug: string; status: string }[] }
@@ -54,9 +59,14 @@ export async function getTrilhaComProgresso(
   const trilha = getTrilhaSafe(trilhaSlug);
   if (!trilha) return null;
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: mentorado } = await supabase.from('mentorados').select('id').eq('user_id', user.id).maybeSingle();
+  if (!mentorado) return null;
   const { data: mt } = await supabase
     .from('mentorado_trilhas')
     .select('*, etapa_respostas(etapa_slug, status)')
+    .eq('mentorado_id', mentorado.id)
     .eq('trilha_slug', trilhaSlug)
     .maybeSingle();
   if (!mt) {

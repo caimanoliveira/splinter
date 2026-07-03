@@ -28,11 +28,13 @@ export default function PlanoAcaoWidget({ trilhaSlug, etapa, resposta, contextoT
     niveis_alvo?: Record<string, number>;
   } | null;
 
-  const topGaps = fonteResposta?.matriz_slug
-    ? getMatriz(fonteResposta.matriz_slug).competencias
+  const matriz = fonteResposta?.matriz_slug ? getMatriz(fonteResposta.matriz_slug) : null;
+
+  const topGaps = matriz
+    ? matriz.competencias
         .map((c) => ({
           competencia: c,
-          gap: (fonteResposta.niveis_alvo?.[c.id] ?? 0) - (fonteResposta.niveis_atuais?.[c.id] ?? 0),
+          gap: (fonteResposta!.niveis_alvo?.[c.id] ?? 0) - (fonteResposta!.niveis_atuais?.[c.id] ?? 0),
         }))
         .filter((x) => x.gap > 0)
         .sort((a, b) => b.gap - a.gap)
@@ -41,23 +43,33 @@ export default function PlanoAcaoWidget({ trilhaSlug, etapa, resposta, contextoT
 
   const inTwoWeeks = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-  const initialAcoes: Acao[] = done && resposta?.resposta
-    ? (resposta.resposta as { acoes: Acao[] }).acoes
-    : topGaps.map((g) => ({ competencia_id: g.competencia.id, descricao: '', prazo: inTwoWeeks }));
+  function buildInitialAcoes(): Acao[] {
+    if (done && resposta?.resposta) return (resposta.resposta as { acoes: Acao[] }).acoes;
+    const base = topGaps.map((g) => ({ competencia_id: g.competencia.id, descricao: '', prazo: inTwoWeeks }));
+    if (base.length >= cfg.n_acoes || !matriz) return base;
+    const usedIds = new Set(base.map((a) => a.competencia_id));
+    const fallbacks = matriz.competencias.filter((c) => !usedIds.has(c.id));
+    let i = 0;
+    while (base.length < cfg.n_acoes && i < fallbacks.length) {
+      base.push({ competencia_id: fallbacks[i].id, descricao: '', prazo: inTwoWeeks });
+      i++;
+    }
+    return base;
+  }
+
+  const initialAcoes: Acao[] = buildInitialAcoes();
 
   const [acoes, setAcoes] = useState<Acao[]>(initialAcoes);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  if (!fonteResposta?.matriz_slug) {
+  if (!fonteResposta?.matriz_slug || !matriz) {
     return (
       <div className="bg-white rounded-xl border border-[#e2e8f0] p-6 text-center">
         <p className="text-[#94a3b8] text-sm">Complete a etapa de auto-avaliação primeiro.</p>
       </div>
     );
   }
-
-  const matriz = getMatriz(fonteResposta.matriz_slug);
 
   if (matriz.competencias.length === 0) {
     return (

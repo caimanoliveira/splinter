@@ -79,7 +79,7 @@ export function KanbanColumn({ stage, leads, onRefresh }: KanbanColumnProps) {
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent onClose={() => setShowCreate(false)}>
           <DialogHeader>
-            <DialogTitle>Novo Lead em "{stage.name}"</DialogTitle>
+            <DialogTitle>{`Novo Lead em "${stage.name}"`}</DialogTitle>
           </DialogHeader>
           <LeadForm
             initialStageId={stage.id}

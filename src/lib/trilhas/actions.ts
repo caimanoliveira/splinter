@@ -55,7 +55,7 @@ export async function saveResposta(input: z.infer<typeof saveRespostaInput>) {
     .select('id')
     .eq('mentorado_id', mentoradoId)
     .eq('trilha_slug', trilhaSlug)
-    .single();
+    .maybeSingle();
   if (!mt) throw new Error('trilha_not_assigned');
 
   await supabase.from('etapa_respostas').upsert(
@@ -93,7 +93,7 @@ export async function completeEtapa(input: z.infer<typeof completeEtapaInput>) {
     .select('id')
     .eq('mentorado_id', mentoradoId)
     .eq('trilha_slug', trilhaSlug)
-    .single();
+    .maybeSingle();
   if (!mt) throw new Error('trilha_not_assigned');
 
   await supabase.from('etapa_respostas').upsert(

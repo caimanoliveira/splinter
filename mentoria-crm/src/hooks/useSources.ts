@@ -15,7 +15,8 @@ export function useSources() {
   }
 
   useEffect(() => {
-    fetchSources()
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchSources()
   }, [])
 
   return { sources, loading, refetch: fetchSources }

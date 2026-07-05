@@ -19,7 +19,8 @@ export function useProducts() {
   }
 
   useEffect(() => {
-    fetchProducts()
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchProducts()
   }, [])
 
   return { products, loading, refetch: fetchProducts }

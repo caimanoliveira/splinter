@@ -18,7 +18,8 @@ export function useStages() {
   }
 
   useEffect(() => {
-    fetchStages()
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchStages()
   }, [])
 
   return { stages, loading, refetch: fetchStages }

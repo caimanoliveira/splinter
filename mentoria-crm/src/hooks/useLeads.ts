@@ -9,6 +9,10 @@ export function useLeads(filters?: { stageId?: string; sourceId?: string; search
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const stageId = filters?.stageId
+  const sourceId = filters?.sourceId
+  const search = filters?.search
+
   const fetchLeads = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -24,18 +28,17 @@ export function useLeads(filters?: { stageId?: string; sourceId?: string; search
         `)
         .order("created_at", { ascending: false })
 
-      if (filters?.stageId) query = query.eq("stage_id", filters.stageId)
-      if (filters?.sourceId) query = query.eq("source_id", filters.sourceId)
-      if (filters?.search) {
+      if (stageId) query = query.eq("stage_id", stageId)
+      if (sourceId) query = query.eq("source_id", sourceId)
+      if (search) {
         query = query.or(
-          `name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,email.ilike.%${filters.search}%`
+          `name.ilike.%${search}%,phone.ilike.%${search}%,email.ilike.%${search}%`
         )
       }
 
       const { data, error } = await query
       if (error) throw error
 
-      // Get next meeting for each lead (the closest future meeting)
       const leadsWithNextMeeting = (data || []).map((lead) => {
         const futureMeetings = (lead.next_meeting || [])
           .filter((m: { date: string }) => new Date(m.date) >= new Date())
@@ -49,10 +52,11 @@ export function useLeads(filters?: { stageId?: string; sourceId?: string; search
     } finally {
       setLoading(false)
     }
-  }, [filters?.stageId, filters?.sourceId, filters?.search])
+  }, [stageId, sourceId, search])
 
   useEffect(() => {
-    fetchLeads()
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchLeads()
   }, [fetchLeads])
 
   return { leads, loading, error, refetch: fetchLeads }

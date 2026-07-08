@@ -182,7 +182,9 @@ const trilhas: Record<TrilhaSlug, Trilha> = {
 };
 
 export function getTrilha(slug: TrilhaSlug): Trilha {
-  return trilhas[slug];
+  const t = trilhas[slug];
+  if (!t) throw new Error(`trilha_not_found: ${slug}`);
+  return t;
 }
 
 export function getTrilhaSafe(slug: string): Trilha | null {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useMemo } from 'react';
+import { useState, useTransition, useMemo, useEffect, useRef } from 'react';
 import { CheckCircle2, Star } from 'lucide-react';
 import { completeEtapa, saveResposta } from '@/lib/trilhas/actions';
 import type { WidgetProps } from '@/lib/trilhas/widgets-registry';
@@ -20,6 +20,18 @@ export default function BancoPerguntasWidget({ trilhaSlug, etapa, resposta }: Wi
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const done = resposta?.status === 'done';
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (done) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      void saveResposta({ trilhaSlug, etapaSlug: etapa.slug, resposta: { favoritas } }).catch(() => {});
+    }, 800);
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [favoritas, done, trilhaSlug, etapa.slug]);
 
   const filtradas = useMemo(() => {
     return cfg.perguntas.filter((p) => {
@@ -30,11 +42,7 @@ export default function BancoPerguntasWidget({ trilhaSlug, etapa, resposta }: Wi
   }, [cfg.perguntas, cat, sen]);
 
   const toggle = (id: string) => {
-    const novo = favoritas.includes(id) ? favoritas.filter((x) => x !== id) : [...favoritas, id];
-    setFavoritas(novo);
-    if (!done) {
-      void saveResposta({ trilhaSlug, etapaSlug: etapa.slug, resposta: { favoritas: novo } }).catch(() => {});
-    }
+    setFavoritas((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   };
 
   const canComplete = favoritas.length >= cfg.min_favoritas;

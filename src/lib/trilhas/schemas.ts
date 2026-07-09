@@ -53,17 +53,17 @@ export const conteudoRespostaSchema = z.object({
 });
 
 export const bancoPerguntasRespostaSchema = z.object({
-  favoritas: z.array(z.string()),
+  favoritas: z.array(z.string().max(100)).max(200),
 });
 
 export const starBuilderRespostaSchema = z.object({
   stars: z.record(
-    z.string(),
+    z.string().max(100),
     z.object({
-      s: z.string(),
-      t: z.string(),
-      a: z.string(),
-      r: z.string(),
+      s: z.string().max(2000),
+      t: z.string().max(2000),
+      a: z.string().max(2000),
+      r: z.string().max(2000),
     })
   ),
 });

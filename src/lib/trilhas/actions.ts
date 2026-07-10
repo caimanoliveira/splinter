@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { getTrilha, getEtapa } from './content';
+import { getTrilhaSafe, getEtapa } from './content';
 import { respostaSchemaFor } from './schemas';
 import type { TrilhaSlug } from '@/types/portal';
 
@@ -26,10 +26,11 @@ export async function startTrilhaIfNeeded(trilhaSlug: TrilhaSlug) {
     .maybeSingle();
   if (!mt) throw new Error('trilha_not_assigned');
   if (!mt.started_at) {
-    await supabase
+    const { error } = await supabase
       .from('mentorado_trilhas')
       .update({ started_at: new Date().toISOString() })
       .eq('id', mt.id);
+    if (error) throw new Error(error.message);
   }
   return mt.id as string;
 }
@@ -58,7 +59,7 @@ export async function saveResposta(input: z.infer<typeof saveRespostaInput>) {
     .single();
   if (!mt) throw new Error('trilha_not_assigned');
 
-  await supabase.from('etapa_respostas').upsert(
+  const { error: upsertErr } = await supabase.from('etapa_respostas').upsert(
     {
       mentorado_trilha_id: mt.id,
       etapa_slug: etapaSlug,
@@ -67,6 +68,7 @@ export async function saveResposta(input: z.infer<typeof saveRespostaInput>) {
     },
     { onConflict: 'mentorado_trilha_id,etapa_slug' }
   );
+  if (upsertErr) throw new Error(upsertErr.message);
 
   revalidatePath(`/portal/trilhas/${trilhaSlug}`);
   revalidatePath(`/portal/trilhas/${trilhaSlug}/${etapaSlug}`);
@@ -96,7 +98,7 @@ export async function completeEtapa(input: z.infer<typeof completeEtapaInput>) {
     .single();
   if (!mt) throw new Error('trilha_not_assigned');
 
-  await supabase.from('etapa_respostas').upsert(
+  const { error: upsertErr } = await supabase.from('etapa_respostas').upsert(
     {
       mentorado_trilha_id: mt.id,
       etapa_slug: etapaSlug,
@@ -106,20 +108,22 @@ export async function completeEtapa(input: z.infer<typeof completeEtapaInput>) {
     },
     { onConflict: 'mentorado_trilha_id,etapa_slug' }
   );
+  if (upsertErr) throw new Error(upsertErr.message);
 
-  const trilha = getTrilha(trilhaSlug as TrilhaSlug);
+  const trilha = getTrilhaSafe(trilhaSlug);
   const { data: respostas } = await supabase
     .from('etapa_respostas')
     .select('etapa_slug, status')
     .eq('mentorado_trilha_id', mt.id);
   const doneSlugs = (respostas ?? []).filter((r) => r.status === 'done').map((r) => r.etapa_slug);
-  const allDone = trilha.etapas.every((e) => doneSlugs.includes(e.slug));
+  const allDone = trilha ? trilha.etapas.every((e) => doneSlugs.includes(e.slug)) : false;
   if (allDone) {
-    await supabase
+    const { error: completeErr } = await supabase
       .from('mentorado_trilhas')
       .update({ completed_at: new Date().toISOString() })
       .eq('id', mt.id)
       .is('completed_at', null);
+    if (completeErr) throw new Error(completeErr.message);
   }
 
   revalidatePath(`/portal/trilhas`);
@@ -136,7 +140,7 @@ const submitPlanoAcaoInput = z.object({
       descricao: z.string().min(1),
       prazo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     })
-  ).length(3),
+  ).min(1).max(5),
 });
 
 export async function submitPlanoAcao(input: z.infer<typeof submitPlanoAcaoInput>) {
@@ -161,19 +165,20 @@ export async function submitPlanoAcao(input: z.infer<typeof submitPlanoAcaoInput
   });
   if (error) throw new Error(error.message);
 
-  const trilha = getTrilha(trilhaSlug as TrilhaSlug);
+  const trilha = getTrilhaSafe(trilhaSlug);
   const { data: respostas } = await supabase
     .from('etapa_respostas')
     .select('etapa_slug, status')
     .eq('mentorado_trilha_id', mt.id);
   const doneSlugs = (respostas ?? []).filter((r) => r.status === 'done').map((r) => r.etapa_slug);
-  const allDone = trilha.etapas.every((e) => doneSlugs.includes(e.slug));
+  const allDone = trilha ? trilha.etapas.every((e) => doneSlugs.includes(e.slug)) : false;
   if (allDone) {
-    await supabase
+    const { error: completeErr } = await supabase
       .from('mentorado_trilhas')
       .update({ completed_at: new Date().toISOString() })
       .eq('id', mt.id)
       .is('completed_at', null);
+    if (completeErr) throw new Error(completeErr.message);
   }
 
   revalidatePath(`/portal/trilhas`);

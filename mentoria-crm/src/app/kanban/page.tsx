@@ -1,7 +1,5 @@
 "use client"
 
-export const dynamic = "force-dynamic"
-
 import { KanbanBoard } from "@/components/kanban/kanban-board"
 import { useLeads } from "@/hooks/useLeads"
 import { useStages } from "@/hooks/useStages"

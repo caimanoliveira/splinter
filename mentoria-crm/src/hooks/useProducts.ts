@@ -7,20 +7,19 @@ import type { Product } from "@/types"
 export function useProducts() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-
-  const fetchProducts = async () => {
-    const { data } = await supabase
-      .from("products")
-      .select("*")
-      .eq("active", true)
-      .order("name")
-    setProducts(data || [])
-    setLoading(false)
-  }
+  const [rev, setRev] = useState(0)
 
   useEffect(() => {
-    fetchProducts()
-  }, [])
+    ;(async () => {
+      const { data } = await supabase
+        .from("products")
+        .select("*")
+        .eq("active", true)
+        .order("name")
+      setProducts(data || [])
+      setLoading(false)
+    })()
+  }, [rev])
 
-  return { products, loading, refetch: fetchProducts }
+  return { products, loading, refetch: () => setRev(r => r + 1) }
 }

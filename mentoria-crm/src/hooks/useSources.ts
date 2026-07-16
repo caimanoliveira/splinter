@@ -7,16 +7,15 @@ import type { Source } from "@/types"
 export function useSources() {
   const [sources, setSources] = useState<Source[]>([])
   const [loading, setLoading] = useState(true)
-
-  const fetchSources = async () => {
-    const { data } = await supabase.from("sources").select("*").order("name")
-    setSources(data || [])
-    setLoading(false)
-  }
+  const [rev, setRev] = useState(0)
 
   useEffect(() => {
-    fetchSources()
-  }, [])
+    ;(async () => {
+      const { data } = await supabase.from("sources").select("*").order("name")
+      setSources(data || [])
+      setLoading(false)
+    })()
+  }, [rev])
 
-  return { sources, loading, refetch: fetchSources }
+  return { sources, loading, refetch: () => setRev(r => r + 1) }
 }

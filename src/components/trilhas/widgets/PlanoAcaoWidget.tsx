@@ -17,6 +17,12 @@ interface Acao {
   prazo: string;
 }
 
+function defaultDeadline(): string {
+  const d = new Date()
+  d.setDate(d.getDate() + 14)
+  return d.toISOString().slice(0, 10)
+}
+
 export default function PlanoAcaoWidget({ trilhaSlug, etapa, resposta, contextoTrilhaRespostas }: WidgetProps) {
   const cfg = etapa.config as unknown as Config;
   const done = resposta?.status === 'done';
@@ -39,7 +45,7 @@ export default function PlanoAcaoWidget({ trilhaSlug, etapa, resposta, contextoT
         .slice(0, cfg.n_acoes)
     : [];
 
-  const inTwoWeeks = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const [inTwoWeeks] = useState(defaultDeadline);
 
   const initialAcoes: Acao[] = done && resposta?.resposta
     ? (resposta.resposta as { acoes: Acao[] }).acoes

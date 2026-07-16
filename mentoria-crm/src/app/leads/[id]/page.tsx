@@ -32,14 +32,7 @@ export default function LeadDetailPage() {
   const [showMeeting, setShowMeeting] = useState(false)
   const [sendingNotif, setSendingNotif] = useState<string | null>(null)
 
-  const fetchLead = useCallback(async () => {
-    const { data } = await supabase
-      .from("leads")
-      .select("*, stage:stages(*), source:sources(*), product:products(*)")
-      .eq("id", id)
-      .single()
-    setLead(data)
-  }, [id])
+  const [rev, setRev] = useState(0)
 
   const fetchMeetings = useCallback(async () => {
     const { data } = await supabase
@@ -59,15 +52,34 @@ export default function LeadDetailPage() {
     setInteractions(data || [])
   }, [id])
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true)
-    await Promise.all([fetchLead(), fetchMeetings(), fetchInteractions()])
-    setLoading(false)
-  }, [fetchLead, fetchMeetings, fetchInteractions])
+  const fetchAll = useCallback(() => setRev(r => r + 1), [])
 
   useEffect(() => {
-    fetchAll()
-  }, [fetchAll])
+    ;(async () => {
+      setLoading(true)
+      await Promise.all([
+        supabase
+          .from("leads")
+          .select("*, stage:stages(*), source:sources(*), product:products(*)")
+          .eq("id", id)
+          .single()
+          .then(({ data }) => setLead(data)),
+        supabase
+          .from("meetings")
+          .select("*")
+          .eq("lead_id", id)
+          .order("date", { ascending: true })
+          .then(({ data }) => setMeetings(data || [])),
+        supabase
+          .from("interactions")
+          .select("*")
+          .eq("lead_id", id)
+          .order("created_at", { ascending: false })
+          .then(({ data }) => setInteractions(data || [])),
+      ])
+      setLoading(false)
+    })()
+  }, [id, rev])
 
   const deleteLead = async () => {
     if (!confirm(`Tem certeza que deseja excluir o lead "${lead?.name}"?`)) return

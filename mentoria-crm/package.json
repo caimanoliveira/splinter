@@ -43,8 +43,5 @@
     "eslint-config-next": "16.2.0",
     "tailwindcss": "^4",
     "typescript": "^5"
-  },
-  "optionalDependencies": {
-    "supabase": "^2.82.0"
   }
 }

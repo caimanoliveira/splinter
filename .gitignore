@@ -147,6 +147,9 @@ dmypy.json
 next-env.d.ts
 node_modules/
 
+# TypeScript build info
+tsconfig.tsbuildinfo
+
 # Local env files (never commit)
 .env.local
 .env.*.local
